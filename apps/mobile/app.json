@@ -29,7 +29,6 @@
       "expo-router",
       "expo-secure-store",
       "expo-notifications",
-      "expo-haptics",
       "expo-camera"
     ],
     "scheme": "rally",

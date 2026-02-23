@@ -1,0 +1,21 @@
+{
+  "name": "rally-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rally — Mobile-first onchain squad finance for Solana Seeker",
+  "workspaces": [
+    "apps/mobile",
+    "apps/api"
+  ],
+  "scripts": {
+    "mobile": "cd apps/mobile && npx expo start",
+    "api": "cd apps/api && npm run dev",
+    "build:programs": "cd programs && anchor build",
+    "test:programs": "cd programs && anchor test",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

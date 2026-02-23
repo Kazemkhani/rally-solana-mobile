@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  pubkey      String   @unique
+  displayName String
+  avatar      String?
+  fcmToken    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  squads                 SquadMembership[]
+  notificationPreference NotificationPreference?
+
+  @@index([pubkey])
+}
+
+model Squad {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  avatar          String?
+  onchainAddress  String   @unique @default("")
+  createdAt       DateTime @default(now())
+
+  members      SquadMembership[]
+  transactions Transaction[]
+  splits       ExpenseSplit[]
+  proposals    Proposal[]
+
+  @@index([onchainAddress])
+}
+
+model SquadMembership {
+  id       String   @id @default(cuid())
+  userId   String
+  squadId  String
+  role     String   @default("MEMBER") // OWNER or MEMBER
+  joinedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [pubkey])
+  squad Squad @relation(fields: [squadId], references: [id])
+
+  @@unique([userId, squadId])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  type        String   // SEND, RECEIVE, SPLIT, POOL, STREAM
+  amount      Decimal
+  currency    String   @default("SOL")
+  fromPubkey  String
+  toPubkey    String
+  squadId     String?
+  txSignature String   @unique
+  memo        String?
+  status      String   @default("PENDING") // PENDING, CONFIRMED, FAILED
+  createdAt   DateTime @default(now())
+
+  squad Squad? @relation(fields: [squadId], references: [id])
+
+  @@index([fromPubkey])
+  @@index([toPubkey])
+  @@index([squadId])
+  @@index([txSignature])
+}
+
+model ExpenseSplit {
+  id          String   @id @default(cuid())
+  description String
+  totalAmount Decimal
+  currency    String   @default("SOL")
+  creatorId   String
+  squadId     String?
+  status      String   @default("PENDING") // PENDING, SETTLED
+  createdAt   DateTime @default(now())
+
+  squad Squad?     @relation(fields: [squadId], references: [id])
+  items SplitItem[]
+}
+
+model SplitItem {
+  id          String  @id @default(cuid())
+  splitId     String
+  userPubkey  String
+  amount      Decimal
+  settled     Boolean @default(false)
+  txSignature String?
+
+  split ExpenseSplit @relation(fields: [splitId], references: [id])
+
+  @@index([userPubkey])
+}
+
+model PaymentStream {
+  id              String   @id @default(cuid())
+  onchainAddress  String   @unique
+  senderPubkey    String
+  recipientPubkey String
+  amountPerSecond Float
+  startTime       DateTime
+  endTime         DateTime
+  status          String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  createdAt       DateTime @default(now())
+
+  @@index([senderPubkey])
+  @@index([recipientPubkey])
+}
+
+model Proposal {
+  id              String   @id @default(cuid())
+  squadId         String
+  onchainAddress  String   @unique @default("")
+  title           String
+  description     String
+  amount          Decimal
+  recipientPubkey String
+  deadline        DateTime
+  status          String   @default("ACTIVE") // ACTIVE, PASSED, FAILED, EXECUTED
+  createdAt       DateTime @default(now())
+
+  squad Squad @relation(fields: [squadId], references: [id])
+
+  @@index([squadId])
+}
+
+model NotificationPreference {
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  payments Boolean @default(true)
+  votes    Boolean @default(true)
+  streams  Boolean @default(true)
+  splits   Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [pubkey])
+}

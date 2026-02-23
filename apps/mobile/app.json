@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Rally",
+    "slug": "rally",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#0A0E1A"
+    },
+    "android": {
+      "package": "com.rally.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0E1A"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.NFC",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.rally.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications",
+      "expo-haptics",
+      "expo-camera"
+    ],
+    "scheme": "rally",
+    "extra": {
+      "eas": {
+        "projectId": "rally-solana-mobile"
+      }
+    }
+  }
+}

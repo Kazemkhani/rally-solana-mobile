@@ -5,64 +5,55 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SquadCard from '../components/SquadCard';
-import { COLORS } from '../utils/constants';
-import type { Squad } from '../types';
-
-const MOCK_SQUADS: Squad[] = [
-  {
-    id: '1',
-    name: 'Weekend Crew',
-    members: ['7nYB...x4Kp', '3mRk...j2Lq', '9pQw...m8Rn', 'me'],
-    vault: 'VaULt...1234',
-    spendThreshold: 1_000_000_000,
-    totalDeposited: 15_500_000_000,
-    createdAt: Date.now() - 2592000000,
-  },
-  {
-    id: '2',
-    name: 'Bali Trip Fund',
-    members: ['7nYB...x4Kp', '3mRk...j2Lq', 'me'],
-    vault: 'VaULt...5678',
-    spendThreshold: 2_000_000_000,
-    totalDeposited: 8_200_000_000,
-    createdAt: Date.now() - 604800000,
-  },
-  {
-    id: '3',
-    name: 'Roommates',
-    members: ['3mRk...j2Lq', 'me'],
-    vault: 'VaULt...9012',
-    spendThreshold: 500_000_000,
-    totalDeposited: 3_100_000_000,
-    createdAt: Date.now() - 7776000000,
-  },
-];
+import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
+import { MOCK_SQUADS } from '../data/mockData';
 
 export default function SquadScreen() {
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Your Squads</Text>
-          <Text style={styles.subtitle}>
-            {MOCK_SQUADS.length} active squads
-          </Text>
+          <View>
+            <Text style={styles.title}>Your Squads</Text>
+            <Text style={styles.subtitle}>{MOCK_SQUADS.length} active squads</Text>
+          </View>
+          <TouchableOpacity style={styles.createBtn} activeOpacity={0.7}>
+            <Text style={styles.createBtnText}>Create Squad +</Text>
+          </TouchableOpacity>
         </View>
 
+        {/* Squad Summary Stats */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{MOCK_SQUADS.length}</Text>
+            <Text style={styles.statLabel}>Squads</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>
+              {MOCK_SQUADS.reduce((acc, s) => acc + s.members.length, 0)}
+            </Text>
+            <Text style={styles.statLabel}>Members</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>
+              ${(MOCK_SQUADS.reduce((acc, s) => acc + s.usdcBalance, 0) + MOCK_SQUADS.reduce((acc, s) => acc + s.totalDeposited / 1e9 * 145, 0)).toFixed(0)}
+            </Text>
+            <Text style={styles.statLabel}>Total Value</Text>
+          </View>
+        </View>
+
+        {/* Squad Cards */}
         <View style={styles.squads}>
           {MOCK_SQUADS.map((squad) => (
             <SquadCard key={squad.id} squad={squad} />
           ))}
         </View>
       </ScrollView>
-
-      {/* FAB - Create Squad */}
-      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -72,47 +63,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
+  },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.sm,
   },
   title: {
-    fontSize: 28,
+    fontSize: FONT_SIZES.xxxl,
     fontWeight: '700',
     color: COLORS.text,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: SPACING.xs,
+  },
+  createBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+  },
+  createBtnText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  statValue: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  statLabel: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
   squads: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 100,
-    gap: 12,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  fabText: {
-    fontSize: 28,
-    color: COLORS.text,
-    fontWeight: '300',
-    marginTop: -2,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+    gap: SPACING.md,
   },
 });

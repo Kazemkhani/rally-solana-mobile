@@ -1,99 +1,58 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BalanceDisplay from '../components/BalanceDisplay';
 import QuickActions from '../components/QuickActions';
 import TransactionItem from '../components/TransactionItem';
-import { COLORS } from '../utils/constants';
+import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { useWalletStore } from '../stores/wallet';
-import type { Transaction } from '../types';
-
-// Mock data for demo
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: '1',
-    type: 'receive',
-    amount: 2.5,
-    currency: 'SOL',
-    from: '7nYB...x4Kp',
-    to: 'me',
-    timestamp: Date.now() - 3600000,
-    status: 'confirmed',
-    memo: 'Dinner split',
-  },
-  {
-    id: '2',
-    type: 'send',
-    amount: 1.0,
-    currency: 'SOL',
-    from: 'me',
-    to: '3mRk...j2Lq',
-    timestamp: Date.now() - 7200000,
-    status: 'confirmed',
-    memo: 'Movie tickets',
-  },
-  {
-    id: '3',
-    type: 'pool',
-    amount: 5.0,
-    currency: 'SOL',
-    from: 'me',
-    to: 'Bali Trip Fund',
-    timestamp: Date.now() - 86400000,
-    status: 'confirmed',
-    memo: 'Trip contribution',
-  },
-  {
-    id: '4',
-    type: 'stream',
-    amount: 0.03,
-    currency: 'SOL',
-    from: '9pQw...m8Rn',
-    to: 'me',
-    timestamp: Date.now() - 172800000,
-    status: 'confirmed',
-    memo: 'Netflix share',
-  },
-  {
-    id: '5',
-    type: 'split',
-    amount: 3.2,
-    currency: 'SOL',
-    from: 'Weekend Crew',
-    to: 'me',
-    timestamp: Date.now() - 259200000,
-    status: 'pending',
-    memo: 'Groceries',
-  },
-];
+import { MOCK_TRANSACTIONS, MOCK_USER } from '../data/mockData';
 
 export default function HomeScreen() {
-  const { connected, balance } = useWalletStore();
+  const { balance, usdcBalance } = useWalletStore();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Hey, Builder 👋</Text>
-          <Text style={styles.subtitle}>Your squad finances at a glance</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.greeting}>Hey, {MOCK_USER.displayName} 👋</Text>
+            <Text style={styles.subtitle}>Your squad finances at a glance</Text>
+          </View>
+          <View style={styles.streakBadge}>
+            <Text style={styles.streakText}>🔥 {MOCK_USER.streakDays}</Text>
+          </View>
         </View>
 
-        {/* Balance */}
-        <BalanceDisplay balance={balance} />
+        {/* Balance Card */}
+        <BalanceDisplay solBalance={balance} usdcBalance={usdcBalance} />
 
         {/* Quick Actions */}
         <QuickActions />
 
         {/* Recent Activity */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAll}>See All</Text>
+            </TouchableOpacity>
+          </View>
           {MOCK_TRANSACTIONS.map((tx) => (
             <TransactionItem key={tx.id} transaction={tx} />
           ))}
         </View>
       </ScrollView>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
+        <Text style={styles.fabIcon}>+</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -103,30 +62,83 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
+  },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.sm,
+  },
+  headerLeft: {
+    flex: 1,
   },
   greeting: {
-    fontSize: 28,
+    fontSize: FONT_SIZES.xxxl,
     fontWeight: '700',
     color: COLORS.text,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
-    marginTop: 4,
+    marginTop: SPACING.xs,
+  },
+  streakBadge: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  streakText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+    color: COLORS.warning,
   },
   section: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 100,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.sm,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZES.xl,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: 12,
+  },
+  seeAll: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 108 : 88,
+    right: SPACING.xl,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  fabIcon: {
+    fontSize: 28,
+    color: COLORS.text,
+    fontWeight: '300',
+    marginTop: -2,
   },
 });

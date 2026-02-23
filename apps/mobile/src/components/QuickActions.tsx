@@ -1,15 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS } from '../utils/constants';
+import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
 
 const ACTIONS = [
   { id: 'send', icon: '↑', label: 'Send', color: COLORS.primary },
-  { id: 'split', icon: '✂', label: 'Split', color: COLORS.success },
-  { id: 'pool', icon: '🏦', label: 'Pool', color: COLORS.secondary },
-  { id: 'vote', icon: '🗳', label: 'Vote', color: COLORS.warning },
+  { id: 'split', icon: '✂', label: 'Split', color: COLORS.splitGreen },
+  { id: 'stream', icon: '≋', label: 'Stream', color: COLORS.streamBlue },
 ];
 
-export default function QuickActions() {
+interface Props {
+  onAction?: (id: string) => void;
+}
+
+export default function QuickActions({ onAction }: Props) {
   return (
     <View style={styles.container}>
       {ACTIONS.map((action) => (
@@ -17,8 +20,9 @@ export default function QuickActions() {
           key={action.id}
           style={styles.actionItem}
           activeOpacity={0.7}
+          onPress={() => onAction?.(action.id)}
         >
-          <View style={[styles.iconCircle, { backgroundColor: action.color + '20' }]}>
+          <View style={[styles.iconCircle, { backgroundColor: action.color + '18' }]}>
             <Text style={[styles.icon, { color: action.color }]}>
               {action.icon}
             </Text>
@@ -33,26 +37,28 @@ export default function QuickActions() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.xl,
+    gap: 40,
   },
   actionItem: {
     alignItems: 'center',
-    gap: 8,
+    gap: SPACING.sm,
   },
   iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 22,
+    fontSize: 26,
+    fontWeight: '700',
   },
   label: {
-    fontSize: 12,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },

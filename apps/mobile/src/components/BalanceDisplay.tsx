@@ -1,68 +1,105 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { COLORS } from '../utils/constants';
+import { View, Text, StyleSheet } from 'react-native';
+import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 
 interface Props {
-  balance: number;
-  onRefresh?: () => void;
+  solBalance: number;
+  usdcBalance: number;
 }
 
-export default function BalanceDisplay({ balance, onRefresh }: Props) {
+export default function BalanceDisplay({ solBalance, usdcBalance }: Props) {
+  const totalUsd = solBalance * 145 + usdcBalance;
+
   return (
-    <View style={styles.container}>
+    <View style={styles.card}>
+      {/* Glass border accent */}
+      <View style={styles.glowTop} />
+
       <Text style={styles.label}>Total Balance</Text>
-      <View style={styles.amountRow}>
-        <Text style={styles.amount}>{balance.toFixed(4)}</Text>
-        <Text style={styles.currency}> SOL</Text>
-        {onRefresh && (
-          <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
-            <Text style={styles.refreshIcon}>↻</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      <Text style={styles.usdEquivalent}>
-        ≈ ${(balance * 145).toFixed(2)} USD
+      <Text style={styles.totalUsd}>
+        ${totalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </Text>
+
+      <View style={styles.tokenRow}>
+        <View style={styles.tokenItem}>
+          <View style={[styles.tokenDot, { backgroundColor: '#9945FF' }]} />
+          <Text style={styles.tokenAmount}>{solBalance.toFixed(2)}</Text>
+          <Text style={styles.tokenSymbol}>SOL</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.tokenItem}>
+          <View style={[styles.tokenDot, { backgroundColor: '#2775CA' }]} />
+          <Text style={styles.tokenAmount}>
+            {usdcBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </Text>
+          <Text style={styles.tokenSymbol}>USDC</Text>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+  card: {
+    marginHorizontal: SPACING.xl,
+    backgroundColor: COLORS.glass,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.xxl,
+    borderWidth: 1,
+    borderColor: COLORS.glassBorder,
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  glowTop: {
+    position: 'absolute',
+    top: 0,
+    left: '20%',
+    right: '20%',
+    height: 2,
+    backgroundColor: COLORS.primary,
+    opacity: 0.6,
+    borderRadius: 1,
   },
   label: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
-  amountRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  amount: {
-    fontSize: 48,
+  totalUsd: {
+    fontSize: 42,
     fontWeight: '800',
     color: COLORS.text,
+    letterSpacing: -1,
   },
-  currency: {
-    fontSize: 20,
+  tokenRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.lg,
+    gap: SPACING.lg,
+  },
+  tokenItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  tokenDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  tokenAmount: {
+    fontSize: FONT_SIZES.lg,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: COLORS.text,
   },
-  refreshBtn: {
-    marginLeft: 8,
-    padding: 4,
-  },
-  refreshIcon: {
-    fontSize: 18,
+  tokenSymbol: {
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textMuted,
+    fontWeight: '500',
   },
-  usdEquivalent: {
-    fontSize: 16,
-    color: COLORS.textMuted,
-    marginTop: 4,
+  divider: {
+    width: 1,
+    height: 20,
+    backgroundColor: COLORS.borderLight,
   },
 });

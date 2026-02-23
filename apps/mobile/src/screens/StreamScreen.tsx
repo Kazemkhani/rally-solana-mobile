@@ -5,114 +5,104 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, TRUNCATE_ADDRESS } from '../utils/constants';
-import type { PaymentStream } from '../types';
-
-const MOCK_STREAMS: PaymentStream[] = [
-  {
-    id: '1',
-    sender: 'me',
-    recipient: '3mRk...j2Lq',
-    amountPerSecond: 115,
-    startTime: Math.floor(Date.now() / 1000) - 86400,
-    endTime: Math.floor(Date.now() / 1000) + 2505600,
-    totalDeposited: 300_000_000,
-    totalWithdrawn: 10_000_000,
-    isCancelled: false,
-  },
-  {
-    id: '2',
-    sender: '9pQw...m8Rn',
-    recipient: 'me',
-    amountPerSecond: 57,
-    startTime: Math.floor(Date.now() / 1000) - 172800,
-    endTime: Math.floor(Date.now() / 1000) + 2332800,
-    totalDeposited: 150_000_000,
-    totalWithdrawn: 5_000_000,
-    isCancelled: false,
-  },
-];
-
-function StreamCard({ stream }: { stream: PaymentStream }) {
-  const [elapsed, setElapsed] = useState(0);
-  const isSending = stream.sender === 'me';
-  const now = Math.floor(Date.now() / 1000);
-  const totalDuration = stream.endTime - stream.startTime;
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentElapsed = Math.floor(Date.now() / 1000) - stream.startTime;
-      setElapsed(Math.min(currentElapsed, totalDuration));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [stream.startTime, totalDuration]);
-
-  const streamed = (elapsed * stream.amountPerSecond) / 1_000_000_000;
-  const total = stream.totalDeposited / 1_000_000_000;
-  const progress = Math.min(elapsed / totalDuration, 1);
-  const daysLeft = Math.ceil((stream.endTime - now) / 86400);
-
-  return (
-    <View style={styles.streamCard}>
-      <View style={styles.streamHeader}>
-        <Text style={styles.streamDirection}>
-          {isSending ? '↑ Sending' : '↓ Receiving'}
-        </Text>
-        <Text style={[styles.streamRate, isSending ? styles.sending : styles.receiving]}>
-          {(stream.amountPerSecond / 1_000_000_000).toFixed(9)} SOL/s
-        </Text>
-      </View>
-
-      <Text style={styles.streamPeer}>
-        {isSending ? `To: ${stream.recipient}` : `From: ${stream.sender}`}
-      </Text>
-
-      {/* Live counter */}
-      <Text style={styles.streamAmount}>
-        {streamed.toFixed(6)} / {total.toFixed(4)} SOL
-      </Text>
-
-      {/* Progress bar */}
-      <View style={styles.progressBar}>
-        <View
-          style={[
-            styles.progressFill,
-            { width: `${progress * 100}%` },
-            isSending ? styles.progressSending : styles.progressReceiving,
-          ]}
-        />
-      </View>
-
-      <View style={styles.streamFooter}>
-        <Text style={styles.streamMeta}>{daysLeft} days remaining</Text>
-        <TouchableOpacity style={styles.actionBtn}>
-          <Text style={styles.actionBtnText}>
-            {isSending ? 'Cancel' : 'Withdraw'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
+import StreamCard from '../components/StreamCard';
+import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
+import { MOCK_STREAMS } from '../data/mockData';
 
 export default function StreamScreen() {
+  const [tick, setTick] = useState(0);
+
+  // Live tick every second for animated counters
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const now = Math.floor(Date.now() / 1000);
+  const incoming = MOCK_STREAMS.filter((s) => s.recipient === 'me');
+  const outgoing = MOCK_STREAMS.filter((s) => s.sender === 'me');
+
+  // Total incoming rate
+  const totalIncomingPerHour = incoming.reduce((sum, s) => sum + s.amountPerSecond * 3600, 0);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Payment Streams</Text>
           <Text style={styles.subtitle}>Real-time continuous payments</Text>
         </View>
 
-        <View style={styles.streams}>
-          {MOCK_STREAMS.map((stream) => (
-            <StreamCard key={stream.id} stream={stream} />
-          ))}
+        {/* Summary Card */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Incoming</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.success }]}>{incoming.length}</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Outgoing</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.warning }]}>{outgoing.length}</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Rate/hr</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.primary }]}>
+              +{totalIncomingPerHour.toFixed(3)}
+            </Text>
+          </View>
         </View>
+
+        {/* Incoming Section */}
+        {incoming.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionDot, { backgroundColor: COLORS.success }]} />
+              <Text style={styles.sectionTitle}>Incoming</Text>
+            </View>
+            <View style={styles.streamList}>
+              {incoming.map((stream) => {
+                const elapsed = Math.min(
+                  now - stream.startTime,
+                  stream.endTime - stream.startTime
+                );
+                return (
+                  <StreamCard key={stream.id} stream={stream} elapsed={elapsed} />
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* Outgoing Section */}
+        {outgoing.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionDot, { backgroundColor: COLORS.warning }]} />
+              <Text style={styles.sectionTitle}>Outgoing</Text>
+            </View>
+            <View style={styles.streamList}>
+              {outgoing.map((stream) => {
+                const elapsed = Math.min(
+                  now - stream.startTime,
+                  stream.endTime - stream.startTime
+                );
+                return (
+                  <StreamCard key={stream.id} stream={stream} elapsed={elapsed} />
+                );
+              })}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
+      {/* Create Stream FAB */}
       <TouchableOpacity style={styles.fab} activeOpacity={0.8}>
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
@@ -121,64 +111,98 @@ export default function StreamScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  title: { fontSize: 28, fontWeight: '700', color: COLORS.text },
-  subtitle: { fontSize: 14, color: COLORS.textSecondary, marginTop: 4 },
-  streams: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 100, gap: 12 },
-  streamCard: {
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    paddingBottom: Platform.OS === 'ios' ? 100 : 80,
+  },
+  header: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.sm,
+  },
+  title: {
+    fontSize: FONT_SIZES.xxxl,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  subtitle: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+  },
+  summaryCard: {
+    flexDirection: 'row',
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 16,
+    marginHorizontal: SPACING.xl,
+    marginTop: SPACING.lg,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  streamHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  summaryItem: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: 8,
   },
-  streamDirection: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary },
-  streamRate: { fontSize: 12, fontWeight: '500' },
-  sending: { color: COLORS.warning },
-  receiving: { color: COLORS.success },
-  streamPeer: { fontSize: 13, color: COLORS.textMuted, marginBottom: 12 },
-  streamAmount: { fontSize: 22, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
-  progressBar: {
-    height: 6,
-    backgroundColor: COLORS.surfaceLight,
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: 12,
+  summaryLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textMuted,
+    marginBottom: SPACING.xs,
   },
-  progressFill: { height: '100%', borderRadius: 3 },
-  progressSending: { backgroundColor: COLORS.warning },
-  progressReceiving: { backgroundColor: COLORS.success },
-  streamFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  streamMeta: { fontSize: 12, color: COLORS.textMuted },
-  actionBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: COLORS.surfaceLight,
+  summaryValue: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: '700',
   },
-  actionBtnText: { fontSize: 13, fontWeight: '600', color: COLORS.primary },
+  summaryDivider: {
+    width: 1,
+    backgroundColor: COLORS.border,
+  },
+  section: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  sectionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  sectionTitle: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  streamList: {
+    gap: SPACING.md,
+  },
   fab: {
     position: 'absolute',
-    bottom: 100,
-    right: 20,
+    bottom: Platform.OS === 'ios' ? 108 : 88,
+    right: SPACING.xl,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.streamBlue,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.secondary,
+    shadowColor: COLORS.streamBlue,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 8,
   },
-  fabText: { fontSize: 28, color: COLORS.text, fontWeight: '300', marginTop: -2 },
+  fabText: {
+    fontSize: 28,
+    color: COLORS.text,
+    fontWeight: '300',
+    marginTop: -2,
+  },
 });

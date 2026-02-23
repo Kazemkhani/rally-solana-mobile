@@ -12,11 +12,14 @@ export interface Squad {
 }
 
 export interface SquadMember {
+  id: string;
+  name: string;
   pubkey: string;
   displayName: string;
   avatar: string;       // emoji avatar
   color: string;        // avatar background color
   role: 'admin' | 'member';
+  joinedAt: number;
 }
 
 export interface Transaction {

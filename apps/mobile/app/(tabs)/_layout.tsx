@@ -1,18 +1,29 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
 import { Tabs } from 'expo-router';
-import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../../src/utils/constants';
+import { COLORS, FONT_SIZES } from '../../src/utils/constants';
 
-function TabIcon({ icon, label, focused }: { icon: string; label: string; focused: boolean }) {
+function TabIcon({ icon, iconFilled, label, focused }: { icon: string; iconFilled: string; label: string; focused: boolean }) {
+    const scale = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        Animated.spring(scale, {
+            toValue: focused ? 1.1 : 1,
+            friction: 6,
+            tension: 300,
+            useNativeDriver: true,
+        }).start();
+    }, [focused]);
+
     return (
-        <View style={styles.tabIconContainer}>
+        <Animated.View style={[styles.tabIconContainer, { transform: [{ scale }] }]}>
             <Text style={[styles.tabIconText, focused && styles.tabIconTextActive]}>
-                {icon}
+                {focused ? iconFilled : icon}
             </Text>
             {focused && (
                 <Text style={styles.tabLabel}>{label}</Text>
             )}
-        </View>
+        </Animated.View>
     );
 }
 
@@ -23,7 +34,7 @@ export default function TabsLayout() {
                 headerShown: false,
                 tabBarStyle: styles.tabBar,
                 tabBarActiveTintColor: COLORS.primary,
-                tabBarInactiveTintColor: COLORS.textMuted,
+                tabBarInactiveTintColor: COLORS.textTertiary,
                 tabBarShowLabel: false,
             }}
         >
@@ -31,7 +42,7 @@ export default function TabsLayout() {
                 name="home"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="🏠" label="Home" focused={focused} />
+                        <TabIcon icon="⌂" iconFilled="⌂" label="Home" focused={focused} />
                     ),
                 }}
             />
@@ -39,7 +50,7 @@ export default function TabsLayout() {
                 name="squads"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="👥" label="Squads" focused={focused} />
+                        <TabIcon icon="◇" iconFilled="◆" label="Squads" focused={focused} />
                     ),
                 }}
             />
@@ -49,7 +60,7 @@ export default function TabsLayout() {
                     tabBarIcon: ({ focused }) => (
                         <View style={styles.payButtonOuter}>
                             <View style={[styles.payButton, focused && styles.payButtonActive]}>
-                                <Text style={styles.payIcon}>💸</Text>
+                                <Text style={styles.payIcon}>↑</Text>
                             </View>
                         </View>
                     ),
@@ -59,7 +70,7 @@ export default function TabsLayout() {
                 name="streams"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="〰️" label="Streams" focused={focused} />
+                        <TabIcon icon="≋" iconFilled="≋" label="Streams" focused={focused} />
                     ),
                 }}
             />
@@ -67,7 +78,7 @@ export default function TabsLayout() {
                 name="profile"
                 options={{
                     tabBarIcon: ({ focused }) => (
-                        <TabIcon icon="👤" label="Profile" focused={focused} />
+                        <TabIcon icon="●" iconFilled="●" label="Profile" focused={focused} />
                     ),
                 }}
             />
@@ -77,13 +88,13 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
     tabBar: {
-        backgroundColor: 'rgba(15, 15, 26, 0.95)',
+        backgroundColor: 'rgba(6, 6, 14, 0.92)',
         borderTopWidth: 1,
         borderTopColor: COLORS.border,
-        height: Platform.OS === 'ios' ? 88 : 68,
-        paddingTop: SPACING.sm,
-        paddingBottom: Platform.OS === 'ios' ? 28 : SPACING.sm,
-        paddingHorizontal: SPACING.sm,
+        height: Platform.OS === 'ios' ? 88 : 72,
+        paddingTop: 8,
+        paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+        paddingHorizontal: 4,
         position: 'absolute',
         bottom: 0,
         left: 0,
@@ -96,11 +107,11 @@ const styles = StyleSheet.create({
         gap: 2,
     },
     tabIconText: {
-        fontSize: 22,
-        opacity: 0.4,
+        fontSize: 20,
+        color: COLORS.textTertiary,
     },
     tabIconTextActive: {
-        opacity: 1,
+        color: COLORS.primary,
     },
     tabLabel: {
         fontSize: FONT_SIZES.xs,
@@ -111,7 +122,7 @@ const styles = StyleSheet.create({
     payButtonOuter: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: -20,
+        marginTop: -15,
     },
     payButton: {
         width: 56,
@@ -122,15 +133,17 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
+        shadowOpacity: 0.35,
         shadowRadius: 12,
         elevation: 8,
     },
     payButtonActive: {
         backgroundColor: COLORS.primaryDark,
-        shadowOpacity: 0.6,
+        shadowOpacity: 0.5,
     },
     payIcon: {
         fontSize: 24,
+        color: '#FFFFFF',
+        fontWeight: '700',
     },
 });

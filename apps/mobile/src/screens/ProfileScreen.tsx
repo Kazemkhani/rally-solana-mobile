@@ -1,155 +1,140 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  Platform,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Platform, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, RADIUS, FONT_SIZES, TRUNCATE_ADDRESS, APP_VERSION } from '../utils/constants';
-import { useWalletStore } from '../stores/wallet';
+import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { MOCK_TOKEN_BALANCES, MOCK_USER } from '../data/mockData';
+import { useWalletStore } from '../stores/wallet';
 
 export default function ProfileScreen() {
-  const { publicKey, balance, usdcBalance, connected, disconnect } = useWalletStore();
+  const { balance, usdcBalance, skrBalance, disconnect, connected } = useWalletStore();
+  const [biometrics, setBiometrics] = useState(true);
   const [notifications, setNotifications] = useState(true);
-  const [biometrics, setBiometrics] = useState(false);
+
+  const tokenData = [
+    { symbol: 'SOL', name: 'Solana', balance: balance, usdValue: balance * 145, color: '#9945FF', icon: '◎' },
+    { symbol: 'USDC', name: 'USD Coin', balance: usdcBalance, usdValue: usdcBalance, color: '#2775CA', icon: '$' },
+    { symbol: 'SKR', name: 'Seeker', balance: skrBalance, usdValue: skrBalance * 0.20, color: '#F59E0B', icon: '✦' },
+  ];
+
+  const handleDisconnect = () => {
+    Alert.alert('Disconnect', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Disconnect', style: 'destructive', onPress: disconnect },
+    ]);
+  };
+
+  const copyAddress = () => {
+    Alert.alert('Copied', 'Wallet address copied to clipboard');
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
-        </View>
-
-        {/* Avatar & Wallet */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>🚀</Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Profile Header */}
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarRing}>
+            <View style={styles.avatarInner}>
+              <Text style={styles.avatarEmoji}>{MOCK_USER.avatar}</Text>
             </View>
             <View style={styles.statusDot} />
           </View>
+
           <Text style={styles.displayName}>{MOCK_USER.displayName}</Text>
-          <TouchableOpacity style={styles.addressContainer} activeOpacity={0.6}>
-            {connected ? (
-              <>
-                <View style={styles.connectedBadge}>
-                  <View style={styles.connectedDot} />
-                  <Text style={styles.connectedText}>Connected</Text>
-                </View>
-                <Text style={styles.address}>
-                  {publicKey ? TRUNCATE_ADDRESS(publicKey, 6) : ''}
-                </Text>
-              </>
-            ) : (
-              <View style={styles.connectBtn}>
-                <Text style={styles.connectBtnText}>Connect Wallet</Text>
-              </View>
-            )}
+
+          <View style={styles.connectedRow}>
+            <View style={styles.connectedDot} />
+            <Text style={styles.connectedText}>Connected</Text>
+          </View>
+
+          <TouchableOpacity onPress={copyAddress} style={styles.addressRow}>
+            <Text style={styles.addressText}>
+              {MOCK_USER.pubkey.slice(0, 6)}...{MOCK_USER.pubkey.slice(-6)}
+            </Text>
+            <Text style={styles.copyIcon}>📋</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Stats Row */}
+        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{MOCK_USER.squads.length}</Text>
+            <Text style={[styles.statValue, { color: COLORS.primary }]}>{MOCK_USER.squads.length}</Text>
             <Text style={styles.statLabel}>Squads</Text>
           </View>
+          <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>27</Text>
-            <Text style={styles.statLabel}>Transactions</Text>
+            <Text style={[styles.statValue, { color: COLORS.streamBlue }]}>24</Text>
+            <Text style={styles.statLabel}>Txns</Text>
           </View>
+          <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>🔥 {MOCK_USER.streakDays}</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+            <Text style={[styles.statValue, { color: COLORS.warning }]}>{MOCK_USER.streakDays}</Text>
+            <Text style={styles.statLabel}>Streak 🔥</Text>
           </View>
         </View>
 
-        {/* Token Balances */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Token Balances</Text>
-          {MOCK_TOKEN_BALANCES.map((token) => (
-            <View key={token.symbol} style={styles.tokenCard}>
-              <View style={[styles.tokenIcon, { backgroundColor: token.color + '18' }]}>
-                <Text style={[styles.tokenIconText, { color: token.color }]}>{token.icon}</Text>
-              </View>
-              <View style={styles.tokenInfo}>
-                <Text style={styles.tokenName}>{token.name}</Text>
-                <Text style={styles.tokenSymbol}>{token.symbol}</Text>
-              </View>
-              <View style={styles.tokenBalance}>
-                <Text style={styles.tokenAmount}>{token.balance.toLocaleString()}</Text>
-                <Text style={styles.tokenUsd}>
-                  ${token.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </Text>
-              </View>
+        {/* Assets */}
+        <Text style={styles.sectionTitle}>Assets</Text>
+        {tokenData.map((token, i) => (
+          <View key={token.symbol} style={[styles.tokenRow, i < tokenData.length - 1 && styles.tokenRowBorder]}>
+            <View style={[styles.tokenIcon, { backgroundColor: token.color + '18' }]}>
+              <Text style={[styles.tokenIconText, { color: token.color }]}>{token.icon}</Text>
             </View>
-          ))}
-        </View>
+            <View style={styles.tokenInfo}>
+              <Text style={styles.tokenName}>{token.name}</Text>
+              <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+            </View>
+            <View style={styles.tokenValues}>
+              <Text style={styles.tokenBalance}>{token.balance.toLocaleString('en-US', { maximumFractionDigits: 2 })}</Text>
+              <Text style={styles.tokenUsd}>${token.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+            </View>
+          </View>
+        ))}
 
         {/* Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+        <Text style={[styles.sectionTitle, { marginTop: SPACING.xxxl }]}>Settings</Text>
 
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Text style={styles.settingIcon}>🔔</Text>
-              <Text style={styles.settingLabel}>Notifications</Text>
-            </View>
-            <Switch
-              value={notifications}
-              onValueChange={setNotifications}
-              trackColor={{ false: COLORS.surfaceLight, true: COLORS.primary + '50' }}
-              thumbColor={notifications ? COLORS.primary : COLORS.textMuted}
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Text style={styles.settingIcon}>🔒</Text>
-              <Text style={styles.settingLabel}>Biometric Auth</Text>
-            </View>
-            <Switch
-              value={biometrics}
-              onValueChange={setBiometrics}
-              trackColor={{ false: COLORS.surfaceLight, true: COLORS.primary + '50' }}
-              thumbColor={biometrics ? COLORS.primary : COLORS.textMuted}
-            />
-          </View>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Text style={styles.settingIcon}>💰</Text>
-              <Text style={styles.settingLabel}>Default Currency</Text>
-            </View>
-            <Text style={styles.settingValue}>SOL</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <View style={styles.settingLeft}>
-              <Text style={styles.settingIcon}>🌙</Text>
-              <Text style={styles.settingLabel}>Theme</Text>
-            </View>
-            <Text style={styles.settingValue}>Dark</Text>
-          </TouchableOpacity>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingIcon}>🔐</Text>
+          <Text style={styles.settingLabel}>Biometric Lock</Text>
+          <Switch
+            value={biometrics}
+            onValueChange={setBiometrics}
+            trackColor={{ false: '#333', true: COLORS.primary + '60' }}
+            thumbColor={biometrics ? COLORS.primary : '#666'}
+          />
         </View>
+        <View style={styles.settingDivider} />
 
-        {/* Disconnect Wallet */}
-        {connected && (
-          <TouchableOpacity style={styles.disconnectButton} activeOpacity={0.7} onPress={disconnect}>
-            <Text style={styles.disconnectText}>Disconnect Wallet</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.settingRow}>
+          <Text style={styles.settingIcon}>🔔</Text>
+          <Text style={styles.settingLabel}>Notifications</Text>
+          <Switch
+            value={notifications}
+            onValueChange={setNotifications}
+            trackColor={{ false: '#333', true: COLORS.primary + '60' }}
+            thumbColor={notifications ? COLORS.primary : '#666'}
+          />
+        </View>
+        <View style={styles.settingDivider} />
+
+        <TouchableOpacity style={styles.settingRow}>
+          <Text style={styles.settingIcon}>⚙️</Text>
+          <Text style={styles.settingLabel}>Network</Text>
+          <Text style={styles.settingValue}>Devnet</Text>
+        </TouchableOpacity>
+
+        {/* Disconnect */}
+        <TouchableOpacity style={styles.disconnectBtn} onPress={handleDisconnect}>
+          <Text style={styles.disconnectText}>Disconnect Wallet</Text>
+        </TouchableOpacity>
 
         {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Rally v{APP_VERSION}</Text>
-          <Text style={styles.footerText}>Built on Solana ◎</Text>
-        </View>
+        <Text style={styles.versionText}>Rally v0.1.0 · Powered by Solana</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -163,63 +148,56 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: Platform.OS === 'ios' ? 120 : 100,
   },
-  header: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.sm,
-  },
-  title: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  // ─── Profile Card ───
-  profileCard: {
+  // Profile Header
+  profileHeader: {
     alignItems: 'center',
-    paddingVertical: SPACING.xxl,
+    paddingTop: SPACING.xxl,
+    paddingBottom: SPACING.xl,
   },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: SPACING.md,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primary + '18',
-    alignItems: 'center',
-    justifyContent: 'center',
+  avatarRing: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     borderWidth: 2,
     borderColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    marginBottom: SPACING.lg,
   },
-  avatarText: {
+  avatarInner: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEmoji: {
     fontSize: 36,
   },
   statusDot: {
     position: 'absolute',
     bottom: 2,
     right: 2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: COLORS.success,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: COLORS.background,
   },
   displayName: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: COLORS.text,
-    marginBottom: SPACING.sm,
+    marginBottom: 4,
   },
-  addressContainer: {
-    alignItems: 'center',
-  },
-  connectedBadge: {
+  connectedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
-    marginBottom: SPACING.xs,
+    gap: 6,
+    marginBottom: SPACING.sm,
   },
   connectedDot: {
     width: 6,
@@ -232,78 +210,79 @@ const styles = StyleSheet.create({
     color: COLORS.success,
     fontWeight: '500',
   },
-  address: {
-    fontSize: FONT_SIZES.md,
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  addressText: {
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
-  connectBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.sm,
+  copyIcon: {
+    fontSize: 12,
   },
-  connectBtnText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  // ─── Stats ───
+  // Stats
   statsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.xxxl,
+    paddingVertical: SPACING.xl,
     marginHorizontal: SPACING.xl,
-    gap: SPACING.sm,
+    marginBottom: SPACING.xl,
   },
   statItem: {
     flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: SPACING.lg,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   statValue: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: '700',
-    color: COLORS.primary,
+    fontSize: 22,
+    fontWeight: '800',
   },
   statLabel: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textMuted,
-    marginTop: SPACING.xs,
+    fontSize: FONT_SIZES.caption,
+    color: COLORS.textTertiary,
+    marginTop: 2,
   },
-  // ─── Tokens ───
-  section: {
-    paddingHorizontal: SPACING.xl,
-    marginTop: SPACING.xxl,
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: COLORS.divider,
   },
+  // Assets
   sectionTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.section,
+    fontWeight: '700',
     color: COLORS.text,
-    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
-  tokenCard: {
+  tokenRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: SPACING.lg,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
+  },
+  tokenRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
   },
   tokenIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.md,
   },
   tokenIconText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
   },
   tokenInfo: {
@@ -316,13 +295,13 @@ const styles = StyleSheet.create({
   },
   tokenSymbol: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textMuted,
+    color: COLORS.textSecondary,
     marginTop: 1,
   },
-  tokenBalance: {
+  tokenValues: {
     alignItems: 'flex-end',
   },
-  tokenAmount: {
+  tokenBalance: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '700',
     color: COLORS.text,
@@ -332,27 +311,19 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 1,
   },
-  // ─── Settings ───
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    padding: SPACING.lg,
-    marginBottom: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  settingLeft: {
+  // Settings
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
   },
   settingIcon: {
     fontSize: 18,
+    marginRight: SPACING.md,
   },
   settingLabel: {
+    flex: 1,
     fontSize: FONT_SIZES.lg,
     color: COLORS.text,
   },
@@ -360,30 +331,27 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
   },
-  // ─── Disconnect ───
-  disconnectButton: {
+  settingDivider: {
+    height: 1,
+    backgroundColor: COLORS.divider,
     marginHorizontal: SPACING.xl,
-    marginTop: SPACING.xxl,
-    backgroundColor: COLORS.error + '12',
-    borderRadius: RADIUS.md,
-    padding: SPACING.lg,
+  },
+  // Disconnect
+  disconnectBtn: {
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.error + '30',
+    paddingVertical: SPACING.xl,
+    marginTop: SPACING.xxxl,
   },
   disconnectText: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '600',
-    color: COLORS.error,
+    color: COLORS.danger,
   },
-  // ─── Footer ───
-  footer: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xxl,
-    gap: SPACING.xs,
-  },
-  footerText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textMuted,
+  // Footer
+  versionText: {
+    fontSize: FONT_SIZES.caption,
+    color: COLORS.textTertiary,
+    textAlign: 'center',
+    marginTop: SPACING.lg,
   },
 });

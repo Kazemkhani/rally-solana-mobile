@@ -12,11 +12,11 @@ export const MOCK_CONTACTS: Contact[] = [
 
 // ─── SQUAD MEMBERS ───────────────────────────────────────────
 export const MOCK_MEMBERS: SquadMember[] = [
-    { pubkey: 'me', displayName: 'You', avatar: '🚀', color: '#8B5CF6', role: 'admin' },
-    { pubkey: '7xKq...3nFp', displayName: 'Alex', avatar: '🦊', color: '#EC4899', role: 'member' },
-    { pubkey: '3mRk...j2Lq', displayName: 'Maya', avatar: '🌸', color: '#3B82F6', role: 'member' },
-    { pubkey: '9pQw...m8Rn', displayName: 'Jordan', avatar: '⚡', color: '#10B981', role: 'member' },
-    { pubkey: '5kLm...x9Wp', displayName: 'Sam', avatar: '🎯', color: '#F59E0B', role: 'member' },
+    { id: 'm0', name: 'You', pubkey: 'me', displayName: 'You', avatar: '🚀', color: '#8B5CF6', role: 'admin', joinedAt: Date.now() - 7776000000 },
+    { id: 'm1', name: 'Alex', pubkey: '7xKq...3nFp', displayName: 'Alex', avatar: '🦊', color: '#EC4899', role: 'member', joinedAt: Date.now() - 5000000000 },
+    { id: 'm2', name: 'Maya', pubkey: '3mRk...j2Lq', displayName: 'Maya', avatar: '🌸', color: '#3B82F6', role: 'member', joinedAt: Date.now() - 3000000000 },
+    { id: 'm3', name: 'Jordan', pubkey: '9pQw...m8Rn', displayName: 'Jordan', avatar: '⚡', color: '#10B981', role: 'member', joinedAt: Date.now() - 2000000000 },
+    { id: 'm4', name: 'Sam', pubkey: '5kLm...x9Wp', displayName: 'Sam', avatar: '🎯', color: '#F59E0B', role: 'member', joinedAt: Date.now() - 1000000000 },
 ];
 
 // ─── SQUADS ──────────────────────────────────────────────────

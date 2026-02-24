@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { COLORS } from '../src/utils/constants';
 import SplashScreen from '../src/components/SplashScreen';
+import { ToastProvider } from '../src/components/Toast';
 
 // Web-only global CSS polish
 if (Platform.OS === 'web') {
@@ -27,19 +28,21 @@ export default function RootLayout() {
     return (
         <QueryClientProvider client={queryClient}>
             <SafeAreaProvider>
-                <StatusBar style="light" />
-                {showSplash && (
-                    <SplashScreen onFinish={() => setShowSplash(false)} />
-                )}
-                {!showSplash && (
-                    <Stack
-                        screenOptions={{
-                            headerShown: false,
-                            contentStyle: { backgroundColor: COLORS.background },
-                            animation: 'fade',
-                        }}
-                    />
-                )}
+                <ToastProvider>
+                    <StatusBar style="light" />
+                    {showSplash && (
+                        <SplashScreen onFinish={() => setShowSplash(false)} />
+                    )}
+                    {!showSplash && (
+                        <Stack
+                            screenOptions={{
+                                headerShown: false,
+                                contentStyle: { backgroundColor: COLORS.background },
+                                animation: 'fade',
+                            }}
+                        />
+                    )}
+                </ToastProvider>
             </SafeAreaProvider>
         </QueryClientProvider>
     );

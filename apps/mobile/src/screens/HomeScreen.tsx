@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   RefreshControl, Platform,
@@ -7,9 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
 import ScreenWrapper from '../components/ScreenWrapper';
 import BalanceDisplay from '../components/BalanceDisplay';
 import AnimatedPressable from '../components/AnimatedPressable';
+import EmptyState from '../components/EmptyState';
+import { SkeletonCard } from '../components/LoadingSkeleton';
+import { showToast } from '../components/Toast';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { MOCK_TRANSACTIONS } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
@@ -51,19 +55,36 @@ function formatTimeAgo(ts: number): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export default function HomeScreen() {
   const { balance, usdcBalance } = useWalletStore();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+    setTimeout(() => {
+      setRefreshing(false);
+      showToast('Portfolio updated', 'success');
+    }, 1200);
   };
 
   const quickActions = [
-    { label: 'Send', icon: '↑', color: COLORS.primary },
-    { label: 'Split', icon: '✂', color: COLORS.success },
-    { label: 'Stream', icon: '≋', color: COLORS.streamBlue },
+    { label: 'Send', icon: '↑', color: COLORS.primary, route: '/pay' },
+    { label: 'Split', icon: '✂', color: COLORS.success, route: '/pay' },
+    { label: 'Stream', icon: '≋', color: COLORS.streamBlue, route: '/streams' },
   ];
 
   const badgeStyle = (type: string) => {
@@ -96,7 +117,7 @@ export default function HomeScreen() {
             entering={FadeInDown.delay(0).duration(400)}
             style={styles.header}
           >
-            <Text style={styles.greeting}>Hey, Alex 👋</Text>
+            <Text style={styles.greeting}>{getGreeting()}, Alex 👋</Text>
             <View style={styles.bellContainer}>
               <Text style={styles.bellIcon}>🔔</Text>
               <View style={styles.bellDot} />
@@ -119,6 +140,7 @@ export default function HomeScreen() {
                 onPressIn={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
+                onPress={() => router.push(action.route as any)}
                 style={({ pressed }) => [
                   styles.actionItem,
                   pressed && { transform: [{ scale: 0.9 }], opacity: 0.8 },
@@ -150,55 +172,64 @@ export default function HomeScreen() {
             </AnimatedPressable>
           </Animated.View>
 
-          {/* Transaction Rows with stagger entrance */}
-          {MOCK_TRANSACTIONS.map((tx, index) => {
-            const badge = badgeStyle(tx.type);
-            const isReceive = tx.type === 'receive' || tx.type === 'stream';
-            const name = isReceive ? tx.fromName : tx.toName;
-            const initial = name.charAt(0).toUpperCase();
-            const gradient = getGradient(name, index);
+          {/* Transaction Rows or Loading/Empty */}
+          {loading ? (
+            <View style={{ paddingHorizontal: SPACING.xl }}>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </View>
+          ) : MOCK_TRANSACTIONS.length === 0 ? (
+            <EmptyState
+              icon="📭"
+              title="No transactions yet"
+              subtitle="Send, split, or stream SOL to see your activity here"
+            />
+          ) : (
+            MOCK_TRANSACTIONS.map((tx, index) => {
+              const badge = badgeStyle(tx.type);
+              const isReceive = tx.type === 'receive' || tx.type === 'stream';
+              const name = isReceive ? tx.fromName : tx.toName;
+              const initial = name.charAt(0).toUpperCase();
+              const gradient = getGradient(name, index);
 
-            return (
-              <Animated.View
-                key={tx.id}
-                entering={FadeInDown.delay(300 + index * 60).duration(400).springify()}
-              >
-                <AnimatedPressable scaleDepth={0.99} style={styles.txRow}>
-                  {/* Gradient Avatar */}
-                  <LinearGradient
-                    colors={gradient}
-                    style={styles.txAvatar}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <Text style={styles.txAvatarText}>{initial}</Text>
-                  </LinearGradient>
-
-                  {/* Info */}
-                  <View style={styles.txInfo}>
-                    <View style={styles.txNameRow}>
-                      <Text style={styles.txName}>{name}</Text>
-                      <Text style={[styles.txBadge, { color: badge.color }]}>
-                        {' '}{badge.label}
-                      </Text>
+              return (
+                <Animated.View
+                  key={tx.id}
+                  entering={FadeInDown.delay(300 + index * 60).duration(400).springify()}
+                >
+                  <AnimatedPressable scaleDepth={0.99} style={styles.txRow}>
+                    <LinearGradient
+                      colors={gradient}
+                      style={styles.txAvatar}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Text style={styles.txAvatarText}>{initial}</Text>
+                    </LinearGradient>
+                    <View style={styles.txInfo}>
+                      <View style={styles.txNameRow}>
+                        <Text style={styles.txName}>{name}</Text>
+                        <Text style={[styles.txBadge, { color: badge.color }]}>
+                          {' '}{badge.label}
+                        </Text>
+                      </View>
+                      {tx.memo && <Text style={styles.txMemo}>{tx.memo}</Text>}
                     </View>
-                    {tx.memo && <Text style={styles.txMemo}>{tx.memo}</Text>}
-                  </View>
-
-                  {/* Amount */}
-                  <View style={styles.txRight}>
-                    <Text style={[styles.txAmount, isReceive && styles.txAmountGreen]}>
-                      {isReceive ? '+' : '-'}{tx.amount} {tx.currency}
-                    </Text>
-                    <Text style={styles.txTime}>{formatTimeAgo(tx.timestamp)}</Text>
-                  </View>
-                </AnimatedPressable>
-                {index < MOCK_TRANSACTIONS.length - 1 && (
-                  <View style={styles.txDivider} />
-                )}
-              </Animated.View>
-            );
-          })}
+                    <View style={styles.txRight}>
+                      <Text style={[styles.txAmount, isReceive && styles.txAmountGreen]}>
+                        {isReceive ? '+' : '-'}{tx.amount} {tx.currency}
+                      </Text>
+                      <Text style={styles.txTime}>{formatTimeAgo(tx.timestamp)}</Text>
+                    </View>
+                  </AnimatedPressable>
+                  {index < MOCK_TRANSACTIONS.length - 1 && (
+                    <View style={styles.txDivider} />
+                  )}
+                </Animated.View>
+              );
+            })
+          )}
         </ScrollView>
       </SafeAreaView>
     </ScreenWrapper>

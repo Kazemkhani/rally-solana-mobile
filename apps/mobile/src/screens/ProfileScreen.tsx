@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch,
-  Platform, Alert, Animated, Easing,
+  Platform, Modal, Animated, Easing, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AnimatedPressable from '../components/AnimatedPressable';
 import { LinearGradient } from 'expo-linear-gradient';
+import { showToast } from '../components/Toast';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { MOCK_USER } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
@@ -16,6 +17,8 @@ export default function ProfileScreen() {
   const [biometrics, setBiometrics] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showDisconnect, setShowDisconnect] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Rotating gradient ring
   const ringRotation = useRef(new Animated.Value(0)).current;
@@ -50,14 +53,26 @@ export default function ProfileScreen() {
 
   const handleCopy = () => {
     setCopied(true);
+    showToast('Address copied!', 'success');
     setTimeout(() => setCopied(false), 1500);
   };
 
   const handleDisconnect = () => {
-    Alert.alert('Disconnect', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Disconnect', style: 'destructive', onPress: disconnect },
-    ]);
+    setShowDisconnect(true);
+  };
+
+  const confirmDisconnect = () => {
+    setShowDisconnect(false);
+    disconnect();
+    showToast('Wallet disconnected', 'info');
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      showToast('Profile refreshed', 'success');
+    }, 1000);
   };
 
   return (
@@ -66,6 +81,9 @@ export default function ProfileScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
         >
           {/* Profile Header */}
           <Animated.View style={[styles.profileHeader, {
@@ -154,38 +172,39 @@ export default function ProfileScreen() {
             </AnimatedPressable>
           ))}
 
-          {/* Settings */}
+          {/* Settings — Grouped Card */}
           <Text style={[styles.sectionTitle, { marginTop: SPACING.xxxl }]}>Settings</Text>
-
-          <View style={styles.settingRow}>
-            <Text style={styles.settingIcon}>🔐</Text>
-            <Text style={styles.settingLabel}>Biometric Lock</Text>
-            <Switch
-              value={biometrics}
-              onValueChange={setBiometrics}
-              trackColor={{ false: '#1A1A35', true: 'rgba(139,92,246,0.4)' }}
-              thumbColor={biometrics ? COLORS.primary : '#4B5563'}
-            />
+          <View style={styles.settingsCard}>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingIcon}>🔐</Text>
+              <Text style={styles.settingLabel}>Biometric Lock</Text>
+              <Switch
+                value={biometrics}
+                onValueChange={(v) => { setBiometrics(v); showToast(v ? 'Biometric lock enabled' : 'Biometric lock disabled', 'info'); }}
+                trackColor={{ false: '#1A1A35', true: 'rgba(139,92,246,0.4)' }}
+                thumbColor={biometrics ? COLORS.primary : '#4B5563'}
+              />
+            </View>
+            <View style={styles.settingDivider} />
+            <View style={styles.settingRow}>
+              <Text style={styles.settingIcon}>🔔</Text>
+              <Text style={styles.settingLabel}>Notifications</Text>
+              <Switch
+                value={notifications}
+                onValueChange={(v) => { setNotifications(v); showToast(v ? 'Notifications enabled' : 'Notifications disabled', 'info'); }}
+                trackColor={{ false: '#1A1A35', true: 'rgba(139,92,246,0.4)' }}
+                thumbColor={notifications ? COLORS.primary : '#4B5563'}
+              />
+            </View>
+            <View style={styles.settingDivider} />
+            <AnimatedPressable scaleDepth={0.99} opacityDepth={0.9} style={styles.settingRow}>
+              <Text style={styles.settingIcon}>⚙️</Text>
+              <Text style={styles.settingLabel}>Network</Text>
+              <View style={styles.devnetBadge}>
+                <Text style={styles.devnetText}>Devnet</Text>
+              </View>
+            </AnimatedPressable>
           </View>
-          <View style={styles.settingDivider} />
-
-          <View style={styles.settingRow}>
-            <Text style={styles.settingIcon}>🔔</Text>
-            <Text style={styles.settingLabel}>Notifications</Text>
-            <Switch
-              value={notifications}
-              onValueChange={setNotifications}
-              trackColor={{ false: '#1A1A35', true: 'rgba(139,92,246,0.4)' }}
-              thumbColor={notifications ? COLORS.primary : '#4B5563'}
-            />
-          </View>
-          <View style={styles.settingDivider} />
-
-          <AnimatedPressable scaleDepth={0.99} opacityDepth={0.9} style={styles.settingRow}>
-            <Text style={styles.settingIcon}>⚙️</Text>
-            <Text style={styles.settingLabel}>Network</Text>
-            <Text style={styles.settingValue}>Devnet</Text>
-          </AnimatedPressable>
 
           {/* Disconnect */}
           <AnimatedPressable scaleDepth={0.93} style={styles.disconnectBtn} onPress={handleDisconnect}>
@@ -194,6 +213,23 @@ export default function ProfileScreen() {
 
           <Text style={styles.versionText}>Rally v0.1.0 · Powered by Solana</Text>
         </ScrollView>
+
+        {/* Custom Disconnect Modal */}
+        <Modal visible={showDisconnect} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalEmoji}>⚠️</Text>
+              <Text style={styles.modalTitle}>Disconnect Wallet?</Text>
+              <Text style={styles.modalSub}>You will need to reconnect to access your funds</Text>
+              <TouchableOpacity style={styles.modalDanger} onPress={confirmDisconnect}>
+                <Text style={styles.modalDangerText}>Disconnect</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowDisconnect(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </ScreenWrapper>
   );
@@ -377,6 +413,18 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   // Settings
+  settingsCard: {
+    marginHorizontal: SPACING.xl,
+    borderRadius: RADIUS.xl,
+    backgroundColor: 'rgba(17, 17, 34, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.08)',
+    overflow: 'hidden',
+    ...Platform.select({
+      web: { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' } as any,
+      default: {},
+    }),
+  },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -386,6 +434,13 @@ const styles = StyleSheet.create({
   settingIcon: { fontSize: 18, marginRight: SPACING.md },
   settingLabel: { flex: 1, fontSize: FONT_SIZES.lg, color: COLORS.text },
   settingValue: { fontSize: FONT_SIZES.md, color: '#6B7280' },
+  devnetBadge: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    borderRadius: RADIUS.sm,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+  },
+  devnetText: { fontSize: 11, fontWeight: '600', color: COLORS.warning },
   settingDivider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.03)',
@@ -401,6 +456,44 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.danger,
   },
+  // Custom Disconnect Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xxxl,
+  },
+  modalContent: {
+    backgroundColor: '#111122',
+    borderRadius: RADIUS.xl,
+    padding: SPACING.xxl,
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.12)',
+  },
+  modalEmoji: { fontSize: 36, marginBottom: SPACING.lg },
+  modalTitle: {
+    fontSize: FONT_SIZES.xxl, fontWeight: '700',
+    color: COLORS.text, marginBottom: SPACING.sm, textAlign: 'center',
+  },
+  modalSub: {
+    fontSize: FONT_SIZES.md, color: COLORS.textSecondary,
+    textAlign: 'center', marginBottom: SPACING.xxl, lineHeight: 20,
+  },
+  modalDanger: {
+    width: '100%', paddingVertical: SPACING.md,
+    borderRadius: RADIUS.lg, backgroundColor: 'rgba(239,68,68,0.12)',
+    alignItems: 'center', marginBottom: SPACING.md,
+  },
+  modalDangerText: { fontSize: FONT_SIZES.lg, fontWeight: '600', color: COLORS.danger },
+  modalCancel: {
+    width: '100%', paddingVertical: SPACING.md,
+    alignItems: 'center',
+  },
+  modalCancelText: { fontSize: FONT_SIZES.md, color: COLORS.textSecondary },
   versionText: {
     fontSize: 11,
     color: '#4B5563',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Platform,
+  View, Text, StyleSheet, ScrollView, Platform, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,17 +14,35 @@ import Animated, {
 } from 'react-native-reanimated';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AnimatedPressable from '../components/AnimatedPressable';
+import EmptyState from '../components/EmptyState';
+import { SkeletonCard } from '../components/LoadingSkeleton';
+import { showToast } from '../components/Toast';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { useStreamStore } from '../stores/streams';
 
 export default function StreamScreen() {
   const { streams } = useStreamStore();
   const [tick, setTick] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 100);
     return () => clearInterval(id);
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      showToast('Streams refreshed', 'success');
+    }, 1000);
+  };
 
   const now = Math.floor(Date.now() / 1000);
   const incoming = streams.filter((s) => s.recipient === 'me' && s.isActive);
@@ -67,27 +85,45 @@ export default function StreamScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
         >
-          {incoming.length > 0 && (
+          {loading ? (
             <>
-              <Animated.View entering={FadeInDown.delay(200).duration(300)} style={styles.sectionHeader}>
-                <View style={[styles.sectionDot, { backgroundColor: COLORS.success }]} />
-                <Text style={styles.sectionTitle}>Incoming</Text>
-              </Animated.View>
-              {incoming.map((s, i) => (
-                <StreamCard key={s.id} stream={s} type="incoming" now={now} index={i} />
-              ))}
+              <SkeletonCard />
+              <SkeletonCard />
             </>
-          )}
-          {outgoing.length > 0 && (
+          ) : streams.length === 0 ? (
+            <EmptyState
+              icon="≋"
+              title="No active streams"
+              subtitle="Create a payment stream to send or receive SOL continuously in real-time"
+            />
+          ) : (
             <>
-              <Animated.View entering={FadeInDown.delay(300).duration(300)} style={styles.sectionHeader}>
-                <View style={[styles.sectionDot, { backgroundColor: COLORS.warning }]} />
-                <Text style={styles.sectionTitle}>Outgoing</Text>
-              </Animated.View>
-              {outgoing.map((s, i) => (
-                <StreamCard key={s.id} stream={s} type="outgoing" now={now} index={incoming.length + i} />
-              ))}
+              {incoming.length > 0 && (
+                <>
+                  <Animated.View entering={FadeInDown.delay(200).duration(300)} style={styles.sectionHeader}>
+                    <View style={[styles.sectionDot, { backgroundColor: COLORS.success }]} />
+                    <Text style={styles.sectionTitle}>Incoming</Text>
+                  </Animated.View>
+                  {incoming.map((s, i) => (
+                    <StreamCard key={s.id} stream={s} type="incoming" now={now} index={i} />
+                  ))}
+                </>
+              )}
+              {outgoing.length > 0 && (
+                <>
+                  <Animated.View entering={FadeInDown.delay(300).duration(300)} style={styles.sectionHeader}>
+                    <View style={[styles.sectionDot, { backgroundColor: COLORS.warning }]} />
+                    <Text style={styles.sectionTitle}>Outgoing</Text>
+                  </Animated.View>
+                  {outgoing.map((s, i) => (
+                    <StreamCard key={s.id} stream={s} type="outgoing" now={now} index={incoming.length + i} />
+                  ))}
+                </>
+              )}
             </>
           )}
         </ScrollView>

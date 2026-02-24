@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, TextInput, Platform,
+  Modal, TextInput, Platform, RefreshControl, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AnimatedPressable from '../components/AnimatedPressable';
+import EmptyState from '../components/EmptyState';
+import { SkeletonCard } from '../components/LoadingSkeleton';
+import { showToast } from '../components/Toast';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { useSquadStore } from '../stores/squads';
 import { MOCK_MEMBERS } from '../data/mockData';
@@ -44,6 +47,22 @@ export default function SquadScreen() {
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('🏠');
 
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+      showToast('Squads refreshed', 'success');
+    }, 1000);
+  };
+
   const handleCreate = () => {
     if (!newName.trim()) return;
     addSquad({
@@ -60,6 +79,7 @@ export default function SquadScreen() {
     setNewName('');
     setNewEmoji('🏠');
     setShowCreate(false);
+    showToast(`${newName.trim()} created!`, 'success');
   };
 
   return (
@@ -83,8 +103,23 @@ export default function SquadScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+          }
         >
-          {squads.map((squad, idx) => {
+          {loading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : squads.length === 0 ? (
+            <EmptyState
+              icon="👥"
+              title="No squads yet"
+              subtitle="Create a squad to start splitting expenses and managing group wallets"
+            />
+          ) : squads.map((squad, idx) => {
             const solBalance = squad.totalDeposited / 1_000_000_000;
             const memberAvatars = squad.members.slice(0, 4);
             const extraCount = Math.max(0, squad.members.length - 4);

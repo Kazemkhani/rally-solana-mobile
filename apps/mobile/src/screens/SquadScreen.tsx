@@ -46,6 +46,7 @@ export default function SquadScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('🏠');
+  const [filter, setFilter] = useState<'all' | 'active' | 'archived'>('all');
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -98,6 +99,22 @@ export default function SquadScreen() {
           >
             <Text style={styles.createGhostText}>Create +</Text>
           </AnimatedPressable>
+        </Animated.View>
+
+        {/* Glass Pill Filter Toggle */}
+        <Animated.View entering={FadeInDown.delay(50).duration(300)} style={styles.filterRow}>
+          {(['all', 'active', 'archived'] as const).map((f) => (
+            <AnimatedPressable
+              key={f}
+              scaleDepth={0.95}
+              style={[styles.filterPill, filter === f && styles.filterPillActive]}
+              onPress={() => setFilter(f)}
+            >
+              <Text style={[styles.filterPillText, filter === f && styles.filterPillTextActive]}>
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </Text>
+            </AnimatedPressable>
+          ))}
         </Animated.View>
 
         <ScrollView
@@ -262,21 +279,42 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)',
   },
   createGhostText: { fontSize: FONT_SIZES.md, fontWeight: '600', color: COLORS.primary },
+  // Glass Pill Filters
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  filterPill: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  filterPillActive: {
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    borderColor: 'rgba(139, 92, 246, 0.3)',
+  },
+  filterPillText: {
+    fontSize: 13, fontWeight: '500', color: COLORS.textSecondary,
+  },
+  filterPillTextActive: {
+    color: COLORS.primary, fontWeight: '600',
+  },
   scrollContent: {
     paddingHorizontal: SPACING.xl, paddingTop: SPACING.md,
     paddingBottom: Platform.OS === 'ios' ? 120 : 100, gap: 14,
   },
   // Squad Card
   squadCard: {
-    padding: SPACING.xl, borderRadius: RADIUS.xl, overflow: 'hidden',
-    position: 'relative', backgroundColor: 'rgba(17, 17, 34, 0.6)',
+    padding: SPACING.xl, borderRadius: RADIUS.xl, overflow: 'hidden' as const,
+    position: 'relative' as const, backgroundColor: 'rgba(17, 17, 34, 0.6)',
     borderWidth: 1, borderLeftWidth: 2.5, borderColor: 'rgba(139, 92, 246, 0.08)',
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15, shadowRadius: 12, elevation: 6,
-    ...Platform.select({
-      web: { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' },
-      default: {},
-    }),
   },
   topAccentLine: {
     position: 'absolute', top: 0, left: '15%', right: '15%', height: 1.5,

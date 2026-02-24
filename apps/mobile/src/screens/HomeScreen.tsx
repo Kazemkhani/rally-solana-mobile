@@ -14,8 +14,8 @@ import AnimatedPressable from '../components/AnimatedPressable';
 import EmptyState from '../components/EmptyState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
 import { showToast } from '../components/Toast';
-import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
-import { MOCK_TRANSACTIONS } from '../data/mockData';
+import { COLORS, SPACING, RADIUS, FONT_SIZES, TRUNCATE_ADDRESS } from '../utils/constants';
+import { MOCK_TRANSACTIONS, MOCK_USER } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
 
 // Gradient pairs per avatar initial
@@ -81,21 +81,15 @@ export default function HomeScreen() {
     }, 1200);
   };
 
-  const quickActions = [
-    { label: 'Send', icon: '↑', color: COLORS.primary, route: '/pay' },
-    { label: 'Split', icon: '✂', color: COLORS.success, route: '/pay' },
-    { label: 'Stream', icon: '≋', color: COLORS.streamBlue, route: '/streams' },
-  ];
-
   const badgeStyle = (type: string) => {
-    const map: Record<string, { label: string; color: string }> = {
-      receive: { label: 'RECEIVED', color: COLORS.success },
-      send: { label: 'SENT', color: '#6B7280' },
-      split: { label: 'SPLIT', color: COLORS.primary },
-      stream: { label: 'STREAM', color: COLORS.streamBlue },
-      pool: { label: 'POOL', color: COLORS.warning },
-    };
-    return map[type] || { label: type.toUpperCase(), color: '#6B7280' };
+    switch (type) {
+      case 'receive': return { label: 'RECEIVED', color: COLORS.success };
+      case 'send': return { label: 'SENT', color: COLORS.danger };
+      case 'split': return { label: 'SPLIT', color: COLORS.warning };
+      case 'stream': return { label: 'STREAM', color: COLORS.streamBlue };
+      case 'pool': return { label: 'POOL', color: COLORS.primary };
+      default: return { label: type.toUpperCase(), color: COLORS.textSecondary };
+    }
   };
 
   return (
@@ -112,67 +106,110 @@ export default function HomeScreen() {
           }
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Header */}
+          {/* Header — Avatar, Address Pill, Bell */}
           <Animated.View
             entering={FadeInDown.delay(0).duration(400)}
             style={styles.header}
           >
-            <Text style={styles.greeting}>{getGreeting()}, Alex 👋</Text>
+            <LinearGradient
+              colors={['#667eea', '#764ba2']}
+              style={styles.headerAvatar}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Text style={styles.headerAvatarText}>A</Text>
+            </LinearGradient>
+            <View style={styles.addressPill}>
+              <Text style={styles.addressText}>
+                {TRUNCATE_ADDRESS(MOCK_USER.pubkey)}
+              </Text>
+            </View>
             <View style={styles.bellContainer}>
               <Text style={styles.bellIcon}>🔔</Text>
               <View style={styles.bellDot} />
             </View>
           </Animated.View>
 
-          {/* Balance Card — Uses BalanceDisplay component */}
+          {/* Greeting */}
+          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
+            <Text style={styles.greeting}>{getGreeting()}, Alex</Text>
+          </Animated.View>
+
+          {/* Balance Card */}
           <Animated.View entering={FadeInDown.delay(100).duration(500).springify()}>
             <BalanceDisplay solBalance={balance} usdcBalance={usdcBalance} />
           </Animated.View>
 
-          {/* Quick Actions with haptic feedback */}
+          {/* Action Pill Bar — Receive | + | Send (wallet-style) */}
           <Animated.View
             entering={FadeInDown.delay(200).duration(400).springify()}
-            style={styles.actionsRow}
+            style={styles.actionPillBar}
           >
-            {quickActions.map((action) => (
-              <Pressable
-                key={action.label}
-                onPressIn={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-                onPress={() => router.push(action.route as any)}
-                style={({ pressed }) => [
-                  styles.actionItem,
-                  pressed && { transform: [{ scale: 0.9 }], opacity: 0.8 },
-                ]}
+            <AnimatedPressable
+              scaleDepth={0.95}
+              style={styles.actionPillLeft}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
+              <Text style={styles.actionPillIcon}>↓</Text>
+              <Text style={styles.actionPillLabel}>Receive</Text>
+            </AnimatedPressable>
+            <AnimatedPressable
+              scaleDepth={0.9}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/pay'); }}
+            >
+              <LinearGradient
+                colors={['#A78BFA', '#7C3AED']}
+                style={styles.actionPillCenter}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
               >
-                <LinearGradient
-                  colors={[action.color + '18', action.color + '08']}
-                  style={styles.actionCircle}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Text style={[styles.actionIcon, { color: action.color }]}>
-                    {action.icon}
-                  </Text>
-                </LinearGradient>
-                <Text style={styles.actionLabel}>{action.label}</Text>
-              </Pressable>
+                <Text style={styles.actionPillCenterIcon}>+</Text>
+              </LinearGradient>
+            </AnimatedPressable>
+            <AnimatedPressable
+              scaleDepth={0.95}
+              style={styles.actionPillRight}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/pay'); }}
+            >
+              <Text style={styles.actionPillLabel}>Send</Text>
+              <Text style={styles.actionPillIcon}>↗</Text>
+            </AnimatedPressable>
+          </Animated.View>
+
+          {/* Quick Access Row */}
+          <Animated.View
+            entering={FadeInDown.delay(250).duration(400).springify()}
+            style={styles.quickRow}
+          >
+            {[
+              { label: 'Split', icon: '✂', route: '/pay' },
+              { label: 'Stream', icon: '≋', route: '/streams' },
+              { label: 'Squads', icon: '◆', route: '/squads' },
+            ].map((item) => (
+              <AnimatedPressable
+                key={item.label}
+                scaleDepth={0.93}
+                style={styles.quickChip}
+                onPress={() => router.push(item.route as any)}
+              >
+                <Text style={styles.quickChipIcon}>{item.icon}</Text>
+                <Text style={styles.quickChipLabel}>{item.label}</Text>
+              </AnimatedPressable>
             ))}
           </Animated.View>
 
           {/* Section Header */}
           <Animated.View
-            entering={FadeInDown.delay(250).duration(300)}
+            entering={FadeInDown.delay(300).duration(300)}
             style={styles.sectionHeader}
           >
             <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <AnimatedPressable>
-              <Text style={styles.seeAll}>See All →</Text>
+            <AnimatedPressable style={styles.seeAllPill}>
+              <Text style={styles.seeAll}>See All</Text>
             </AnimatedPressable>
           </Animated.View>
 
-          {/* Transaction Rows or Loading/Empty */}
+          {/* Transaction Rows — Chat-style (larger avatars, preview text) */}
           {loading ? (
             <View style={{ paddingHorizontal: SPACING.xl }}>
               <SkeletonCard />
@@ -196,7 +233,7 @@ export default function HomeScreen() {
               return (
                 <Animated.View
                   key={tx.id}
-                  entering={FadeInDown.delay(300 + index * 60).duration(400).springify()}
+                  entering={FadeInDown.delay(350 + index * 50).duration(400).springify()}
                 >
                   <AnimatedPressable scaleDepth={0.99} style={styles.txRow}>
                     <LinearGradient
@@ -208,13 +245,10 @@ export default function HomeScreen() {
                       <Text style={styles.txAvatarText}>{initial}</Text>
                     </LinearGradient>
                     <View style={styles.txInfo}>
-                      <View style={styles.txNameRow}>
-                        <Text style={styles.txName}>{name}</Text>
-                        <Text style={[styles.txBadge, { color: badge.color }]}>
-                          {' '}{badge.label}
-                        </Text>
-                      </View>
-                      {tx.memo && <Text style={styles.txMemo}>{tx.memo}</Text>}
+                      <Text style={styles.txName}>{name}</Text>
+                      <Text style={styles.txMemo} numberOfLines={1}>
+                        {tx.memo || `${badge.label.toLowerCase()} • ${tx.amount} ${tx.currency}`}
+                      </Text>
                     </View>
                     <View style={styles.txRight}>
                       <Text style={[styles.txAmount, isReceive && styles.txAmountGreen]}>
@@ -238,16 +272,35 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingBottom: Platform.OS === 'ios' ? 100 : 80 },
+  scrollContent: { paddingBottom: Platform.OS === 'ios' ? 120 : 100 },
+  // Header — Avatar + Address + Bell
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
-  greeting: { fontSize: 24, fontWeight: '800', color: COLORS.text },
+  headerAvatar: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  headerAvatarText: {
+    fontSize: 16, fontWeight: '700', color: '#FFF',
+  },
+  addressPill: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  addressText: {
+    fontSize: 13, fontWeight: '500', color: COLORS.textSecondary,
+    fontVariant: ['tabular-nums'],
+  },
   bellContainer: { position: 'relative' },
   bellIcon: { fontSize: 22 },
   bellDot: {
@@ -256,64 +309,134 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.danger,
     borderWidth: 1.5, borderColor: '#06060E',
   },
-  // Actions
-  actionsRow: {
+  // Greeting
+  greeting: {
+    fontSize: 22, fontWeight: '700', color: COLORS.text,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.md,
+  },
+  // Action Pill Bar — wallet-style Receive | + | Send
+  actionPillBar: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: SPACING.xxxl,
-    paddingVertical: SPACING.xl,
+    marginHorizontal: SPACING.xl,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+    backgroundColor: 'rgba(17, 17, 34, 0.7)',
+    borderRadius: 999,
+    height: 52,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.08)',
+    ...Platform.select({
+      web: { backdropFilter: 'blur(12px)' } as any,
+      default: {},
+    }),
   },
-  actionItem: { alignItems: 'center', gap: 6 },
-  actionCircle: {
-    width: 44, height: 44, borderRadius: 22,
+  actionPillLeft: {
+    flex: 1, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'center',
+    gap: 6, height: '100%',
   },
-  actionIcon: { fontSize: 18, fontWeight: '600' },
-  actionLabel: { fontSize: 11, fontWeight: '500', color: '#6B7280' },
+  actionPillRight: {
+    flex: 1, flexDirection: 'row',
+    alignItems: 'center', justifyContent: 'center',
+    gap: 6, height: '100%',
+  },
+  actionPillCenter: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3, shadowRadius: 8,
+  },
+  actionPillCenterIcon: {
+    fontSize: 22, fontWeight: '600', color: '#FFF',
+  },
+  actionPillIcon: {
+    fontSize: 14, fontWeight: '600', color: COLORS.textSecondary,
+  },
+  actionPillLabel: {
+    fontSize: 14, fontWeight: '600', color: COLORS.text,
+  },
+  // Quick Access Chips
+  quickRow: {
+    flexDirection: 'row',
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.sm,
+    marginBottom: SPACING.xl,
+  },
+  quickChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  quickChipIcon: {
+    fontSize: 13, color: COLORS.primary,
+  },
+  quickChipLabel: {
+    fontSize: 13, fontWeight: '500', color: COLORS.textSecondary,
+  },
   // Section
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   sectionTitle: { fontSize: FONT_SIZES.section, fontWeight: '700', color: COLORS.text },
-  seeAll: { fontSize: FONT_SIZES.md, fontWeight: '600', color: COLORS.primary },
-  // Transactions
+  seeAllPill: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+  },
+  seeAll: { fontSize: 12, fontWeight: '600', color: COLORS.primary },
+  // Transaction rows — Chat-style (larger avatars)
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    height: 64,
+    height: 72,
   },
   txAvatar: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
     marginRight: SPACING.md,
   },
   txAvatarText: {
-    fontSize: 14, fontWeight: '700', color: '#FFFFFF',
+    fontSize: 16, fontWeight: '700', color: '#FFFFFF',
     textShadowColor: 'rgba(0,0,0,0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   txInfo: { flex: 1 },
-  txNameRow: { flexDirection: 'row', alignItems: 'baseline' },
-  txName: { fontSize: FONT_SIZES.lg, fontWeight: '600', color: COLORS.text },
-  txBadge: { fontSize: 9, fontWeight: '600', letterSpacing: 0.5 },
-  txMemo: { fontSize: FONT_SIZES.sm, color: '#4B5563', marginTop: 1 },
+  txName: {
+    fontSize: 15, fontWeight: '600', color: COLORS.text,
+    marginBottom: 2,
+  },
+  txMemo: {
+    fontSize: 13, color: '#4B5563',
+  },
   txRight: { alignItems: 'flex-end' },
   txAmount: {
-    fontSize: 16, fontWeight: '700', color: COLORS.text,
-    fontVariant: ['tabular-nums'], marginBottom: 1,
+    fontSize: 15, fontWeight: '700', color: COLORS.text,
+    fontVariant: ['tabular-nums'], marginBottom: 2,
   },
   txAmountGreen: { color: COLORS.success },
   txTime: { fontSize: 12, color: '#4B5563' },
   txDivider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.03)',
-    marginLeft: 60 + SPACING.xl,
+    marginLeft: 64 + SPACING.xl,
     marginRight: SPACING.xl,
   },
 });

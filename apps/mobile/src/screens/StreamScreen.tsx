@@ -25,6 +25,7 @@ export default function StreamScreen() {
   const [tick, setTick] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'incoming' | 'outgoing'>('all');
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 500);
@@ -82,6 +83,22 @@ export default function StreamScreen() {
           </View>
         </Animated.View>
 
+        {/* Glass Pill Filter Toggle */}
+        <Animated.View entering={FadeInDown.delay(150).duration(300)} style={styles.filterRow}>
+          {(['all', 'incoming', 'outgoing'] as const).map((f) => (
+            <AnimatedPressable
+              key={f}
+              scaleDepth={0.95}
+              style={[styles.filterPill, filter === f && styles.filterPillActive]}
+              onPress={() => setFilter(f)}
+            >
+              <Text style={[styles.filterPillText, filter === f && styles.filterPillTextActive]}>
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </Text>
+            </AnimatedPressable>
+          ))}
+        </Animated.View>
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
@@ -102,7 +119,7 @@ export default function StreamScreen() {
             />
           ) : (
             <>
-              {incoming.length > 0 && (
+              {(filter === 'all' || filter === 'incoming') && incoming.length > 0 && (
                 <>
                   <Animated.View entering={FadeInDown.delay(200).duration(300)} style={styles.sectionHeader}>
                     <View style={[styles.sectionDot, { backgroundColor: COLORS.success }]} />
@@ -113,7 +130,7 @@ export default function StreamScreen() {
                   ))}
                 </>
               )}
-              {outgoing.length > 0 && (
+              {(filter === 'all' || filter === 'outgoing') && outgoing.length > 0 && (
                 <>
                   <Animated.View entering={FadeInDown.delay(300).duration(300)} style={styles.sectionHeader}>
                     <View style={[styles.sectionDot, { backgroundColor: COLORS.warning }]} />
@@ -257,6 +274,31 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: FONT_SIZES.title, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
   subtitle: { fontSize: FONT_SIZES.md, color: '#4B5563', marginTop: 2 },
+  // Glass Pill Filters
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  filterPill: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  filterPillActive: {
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+  },
+  filterPillText: {
+    fontSize: 13, fontWeight: '500', color: COLORS.textSecondary,
+  },
+  filterPillTextActive: {
+    color: '#38BDF8', fontWeight: '600',
+  },
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: SPACING.xl,

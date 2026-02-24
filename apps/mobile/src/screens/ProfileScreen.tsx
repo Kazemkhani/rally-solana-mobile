@@ -142,41 +142,44 @@ export default function ProfileScreen() {
 
           {/* Assets */}
           <Text style={styles.sectionTitle}>Assets</Text>
-          {tokenData.map((token, i) => (
-            <AnimatedPressable
-              key={token.symbol}
-              scaleDepth={0.99}
-              opacityDepth={0.9}
-              style={[styles.tokenRow, i < tokenData.length - 1 && styles.tokenRowBorder]}
-            >
-              <LinearGradient
-                colors={token.gradient}
-                style={styles.tokenIcon}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.assetsScroll}>
+            {tokenData.map((token, i) => (
+              <AnimatedPressable
+                key={token.symbol}
+                scaleDepth={0.95}
+                style={styles.tokenCard}
               >
-                <Text style={styles.tokenIconText}>{token.icon}</Text>
-              </LinearGradient>
-              <View style={styles.tokenInfo}>
-                <Text style={styles.tokenName}>{token.name}</Text>
-                <Text style={styles.tokenSymbol}>{token.symbol}</Text>
-              </View>
-              <View style={styles.tokenValues}>
-                <Text style={styles.tokenBalance}>
-                  {token.balance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                </Text>
-                <Text style={styles.tokenUsd}>
-                  ${token.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </Text>
-              </View>
-            </AnimatedPressable>
-          ))}
+                <LinearGradient
+                  colors={token.gradient}
+                  style={styles.tokenIcon}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Text style={styles.tokenIconText}>{token.icon}</Text>
+                </LinearGradient>
+                <View style={styles.tokenInfo}>
+                  <Text style={styles.tokenName}>{token.name}</Text>
+                  <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+                </View>
+                <View style={styles.tokenValues}>
+                  <Text style={styles.tokenBalance}>
+                    {token.balance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                  </Text>
+                  <Text style={styles.tokenUsd}>
+                    ${token.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Text>
+                </View>
+              </AnimatedPressable>
+            ))}
+          </ScrollView>
 
           {/* Settings — Grouped Card */}
           <Text style={[styles.sectionTitle, { marginTop: SPACING.xxxl }]}>Settings</Text>
           <View style={styles.settingsCard}>
             <View style={styles.settingRow}>
-              <Text style={styles.settingIcon}>🔐</Text>
+              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
+                <Text style={styles.settingIcon}>🔐</Text>
+              </View>
               <Text style={styles.settingLabel}>Biometric Lock</Text>
               <Switch
                 value={biometrics}
@@ -187,7 +190,9 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.settingDivider} />
             <View style={styles.settingRow}>
-              <Text style={styles.settingIcon}>🔔</Text>
+              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
+                <Text style={styles.settingIcon}>🔔</Text>
+              </View>
               <Text style={styles.settingLabel}>Notifications</Text>
               <Switch
                 value={notifications}
@@ -198,18 +203,22 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.settingDivider} />
             <AnimatedPressable scaleDepth={0.99} opacityDepth={0.9} style={styles.settingRow}>
-              <Text style={styles.settingIcon}>⚙️</Text>
+              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                <Text style={styles.settingIcon}>⚙️</Text>
+              </View>
               <Text style={styles.settingLabel}>Network</Text>
               <View style={styles.devnetBadge}>
                 <Text style={styles.devnetText}>Devnet</Text>
               </View>
             </AnimatedPressable>
+            <View style={styles.settingDivider} />
+            <AnimatedPressable scaleDepth={0.99} opacityDepth={0.9} style={styles.settingRow} onPress={handleDisconnect}>
+              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                <Text style={styles.settingIcon}>🚪</Text>
+              </View>
+              <Text style={[styles.settingLabel, { color: COLORS.danger }]}>Disconnect Wallet</Text>
+            </AnimatedPressable>
           </View>
-
-          {/* Disconnect */}
-          <AnimatedPressable scaleDepth={0.93} style={styles.disconnectBtn} onPress={handleDisconnect}>
-            <Text style={styles.disconnectText}>Disconnect Wallet</Text>
-          </AnimatedPressable>
 
           <Text style={styles.versionText}>Rally v0.1.0 · Powered by Solana</Text>
         </ScrollView>
@@ -247,8 +256,8 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xl,
   },
   avatarOuter: {
-    width: 88,
-    height: 88,
+    width: 108,
+    height: 108,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -256,7 +265,7 @@ const styles = StyleSheet.create({
   },
   avatarRing: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 44,
+    borderRadius: 54,
     overflow: 'hidden',
   },
   ringGradient1: {
@@ -272,8 +281,8 @@ const styles = StyleSheet.create({
     borderLeftColor: '#6366F1',
     borderRightColor: '#3B82F6',
     borderColor: 'transparent',
-    borderTopLeftRadius: 44,
-    borderTopRightRadius: 44,
+    borderTopLeftRadius: 54,
+    borderTopRightRadius: 54,
   },
   ringGradient2: {
     position: 'absolute',
@@ -288,18 +297,18 @@ const styles = StyleSheet.create({
     borderLeftColor: '#8B5CF6',
     borderRightColor: '#6366F1',
     borderColor: 'transparent',
-    borderBottomLeftRadius: 44,
-    borderBottomRightRadius: 44,
+    borderBottomLeftRadius: 54,
+    borderBottomRightRadius: 54,
   },
   avatarInner: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: '#111122',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarEmoji: { fontSize: 36 },
+  avatarEmoji: { fontSize: 44 },
   statusDot: {
     position: 'absolute',
     bottom: 2,
@@ -377,39 +386,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     marginBottom: SPACING.lg,
   },
-  tokenRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  assetsScroll: {
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
+    gap: SPACING.md,
   },
-  tokenRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.03)',
+  tokenCard: {
+    width: 140,
+    padding: SPACING.lg,
+    borderRadius: RADIUS.xl,
+    backgroundColor: 'rgba(17, 17, 34, 0.6)',
+    borderWidth: 1,
+    borderTopWidth: 1.5,
+    borderLeftWidth: 1.5,
+    borderColor: 'rgba(139, 92, 246, 0.08)',
+    alignItems: 'flex-start',
   },
   tokenIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: SPACING.md,
+    marginBottom: SPACING.md,
   },
-  tokenIconText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
-  tokenInfo: { flex: 1 },
-  tokenName: { fontSize: FONT_SIZES.lg, fontWeight: '600', color: COLORS.text },
-  tokenSymbol: { fontSize: 12, color: '#4B5563', marginTop: 1 },
-  tokenValues: { alignItems: 'flex-end' },
+  tokenIconText: { fontSize: 20, fontWeight: '700', color: '#FFFFFF' },
+  tokenInfo: { marginBottom: SPACING.sm },
+  tokenName: { fontSize: FONT_SIZES.md, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
+  tokenSymbol: { fontSize: 13, color: '#6B7280' },
+  tokenValues: { width: '100%' },
   tokenBalance: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.text,
     fontVariant: ['tabular-nums'],
+    marginBottom: 2,
   },
   tokenUsd: {
-    fontSize: 12,
-    color: '#4B5563',
-    marginTop: 1,
+    fontSize: 13,
+    color: '#9CA3AF',
     fontVariant: ['tabular-nums'],
   },
   // Settings
@@ -430,8 +444,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.lg,
+    gap: SPACING.sm,
   },
-  settingIcon: { fontSize: 18, marginRight: SPACING.md },
+  settingIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingIcon: { fontSize: 16 },
   settingLabel: { flex: 1, fontSize: FONT_SIZES.lg, color: COLORS.text },
   settingValue: { fontSize: FONT_SIZES.md, color: '#6B7280' },
   devnetBadge: {

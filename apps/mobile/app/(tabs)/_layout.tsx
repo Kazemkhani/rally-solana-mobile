@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { Tabs } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, FONT_SIZES } from '../../src/utils/constants';
 
 function TabIcon({ icon, iconFilled, label, focused }: { icon: string; iconFilled: string; label: string; focused: boolean }) {
@@ -8,7 +9,6 @@ function TabIcon({ icon, iconFilled, label, focused }: { icon: string; iconFille
 
     useEffect(() => {
         if (focused) {
-            // Micro-bounce: 0.8 → 1.1 → 1.0
             Animated.sequence([
                 Animated.timing(scale, {
                     toValue: 0.8, duration: 50, useNativeDriver: true,
@@ -26,9 +26,15 @@ function TabIcon({ icon, iconFilled, label, focused }: { icon: string; iconFille
 
     return (
         <Animated.View style={[styles.tabIconContainer, { transform: [{ scale }] }]}>
-            <Text style={[styles.tabIconText, focused && styles.tabIconTextActive]}>
-                {focused ? iconFilled : icon}
-            </Text>
+            {/* Active indicator dot */}
+            <View style={[
+                styles.tabIconBg,
+                focused && styles.tabIconBgActive,
+            ]}>
+                <Text style={[styles.tabIconText, focused && styles.tabIconTextActive]}>
+                    {focused ? iconFilled : icon}
+                </Text>
+            </View>
             {focused && <Text style={styles.tabLabel}>{label}</Text>}
         </Animated.View>
     );
@@ -66,9 +72,16 @@ export default function TabsLayout() {
                 options={{
                     tabBarIcon: ({ focused }) => (
                         <View style={styles.payButtonOuter}>
-                            <View style={[styles.payButton, focused && styles.payButtonActive]}>
+                            <LinearGradient
+                                colors={['#A78BFA', '#7C3AED', '#6D28D9']}
+                                style={[styles.payButton, focused && styles.payButtonActive]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                            >
                                 <Text style={styles.payIcon}>↑</Text>
-                            </View>
+                            </LinearGradient>
+                            {/* Gradient ring glow */}
+                            <View style={styles.payGlow} />
                         </View>
                     ),
                 }}
@@ -95,22 +108,28 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
     tabBar: {
-        backgroundColor: 'rgba(6, 6, 14, 0.85)',
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(139, 92, 246, 0.06)',
-        height: Platform.OS === 'ios' ? 88 : 72,
-        paddingTop: 8,
-        paddingBottom: Platform.OS === 'ios' ? 28 : 8,
-        paddingHorizontal: 4,
+        backgroundColor: 'rgba(12, 10, 22, 0.88)',
+        borderTopWidth: 0,
+        height: 64,
+        paddingTop: 6,
+        paddingBottom: 6,
+        paddingHorizontal: 8,
         position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        elevation: 0,
+        bottom: Platform.OS === 'ios' ? 28 : 16,
+        left: 20,
+        right: 20,
+        borderRadius: 999,
+        elevation: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(139, 92, 246, 0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
         ...Platform.select({
             web: {
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
             } as any,
             default: {},
         }),
@@ -120,6 +139,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 2,
     },
+    tabIconBg: {
+        width: 36, height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    tabIconBgActive: {
+        backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    },
     tabIconText: {
         fontSize: 20,
         color: '#4B5563',
@@ -128,35 +156,41 @@ const styles = StyleSheet.create({
         color: COLORS.primary,
     },
     tabLabel: {
-        fontSize: 10,
+        fontSize: 9,
         color: COLORS.primary,
         fontWeight: '600',
         marginTop: 1,
+        letterSpacing: 0.3,
     },
     payButtonOuter: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: -15,
+        marginTop: -20,
     },
     payButton: {
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: COLORS.primary,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
         alignItems: 'center',
         justifyContent: 'center',
         shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 8,
+        shadowOpacity: 0.35,
+        shadowRadius: 14,
+        elevation: 10,
     },
     payButtonActive: {
-        backgroundColor: '#7C3AED',
         shadowOpacity: 0.5,
     },
+    payGlow: {
+        position: 'absolute',
+        width: 58, height: 58,
+        borderRadius: 29,
+        borderWidth: 1.5,
+        borderColor: 'rgba(167, 139, 250, 0.25)',
+    },
     payIcon: {
-        fontSize: 24,
+        fontSize: 22,
         color: '#FFFFFF',
         fontWeight: '700',
     },

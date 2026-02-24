@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, PressableProps } from 'react-native';
+import { Pressable, PressableProps, Platform } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -36,7 +36,9 @@ export default function AnimatedPressable({
             onPressIn={() => {
                 scale.value = withSpring(scaleDepth, { damping: 15, stiffness: 200 });
                 opacity.value = withSpring(opacityDepth, { damping: 15, stiffness: 200 });
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (Platform.OS !== 'web') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+                }
             }}
             onPressOut={() => {
                 scale.value = withSpring(1, { damping: 12, stiffness: 180 });

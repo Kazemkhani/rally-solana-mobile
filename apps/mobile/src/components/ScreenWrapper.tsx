@@ -84,7 +84,7 @@ export default function ScreenWrapper({ children, accentStrength = 0.04 }: Props
     return (
         <View style={styles.container}>
             {/* Deep rich purple/magenta orb — top right */}
-            <Animated.View style={[styles.orbTopLeft, animatedStyle1]}>
+            <Animated.View pointerEvents="none" style={[styles.orbTopLeft, animatedStyle1]}>
                 <LinearGradient
                     colors={[`rgba(110, 40, 150, ${accentStrength * 3.5})`, `rgba(180, 80, 200, ${accentStrength * 1.5})`, 'transparent']}
                     style={StyleSheet.absoluteFill}
@@ -94,7 +94,7 @@ export default function ScreenWrapper({ children, accentStrength = 0.04 }: Props
             </Animated.View>
 
             {/* Warm amber/gold glow — bottom left */}
-            <Animated.View style={[styles.orbBottomRight, animatedStyle2]}>
+            <Animated.View pointerEvents="none" style={[styles.orbBottomRight, animatedStyle2]}>
                 <LinearGradient
                     colors={[`rgba(200, 100, 30, ${accentStrength * 2.8})`, 'transparent']}
                     style={StyleSheet.absoluteFill}
@@ -104,7 +104,7 @@ export default function ScreenWrapper({ children, accentStrength = 0.04 }: Props
             </Animated.View>
 
             {/* Soft, wide central warmth */}
-            <Animated.View style={[styles.orbCenter, animatedStyle3]}>
+            <Animated.View pointerEvents="none" style={[styles.orbCenter, animatedStyle3]}>
                 <LinearGradient
                     colors={[`rgba(255, 120, 80, ${accentStrength * 1.2})`, 'transparent']}
                     style={StyleSheet.absoluteFill}
@@ -115,6 +115,7 @@ export default function ScreenWrapper({ children, accentStrength = 0.04 }: Props
 
             {/* Heavy Vignette for dramatic contrast */}
             <LinearGradient
+                pointerEvents="none"
                 colors={['rgba(0,0,0,0.6)', 'transparent', 'rgba(0,0,0,0.8)']}
                 style={styles.vignetteBottom}
             />

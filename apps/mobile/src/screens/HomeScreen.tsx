@@ -96,6 +96,7 @@ export default function HomeScreen() {
     <ScreenWrapper accentStrength={0.06}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView
+          style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl

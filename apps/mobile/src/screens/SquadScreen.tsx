@@ -1,15 +1,37 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, TextInput, Platform, Animated,
+  Modal, TextInput, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Link } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
+import ScreenWrapper from '../components/ScreenWrapper';
+import AnimatedPressable from '../components/AnimatedPressable';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { useSquadStore } from '../stores/squads';
 import { MOCK_MEMBERS } from '../data/mockData';
 
+// Per-card accent tints via LinearGradient
+const CARD_ACCENT_COLORS: [string, string][] = [
+  ['rgba(245,158,11,0.06)', 'transparent'],  // warm
+  ['rgba(59,130,246,0.06)', 'transparent'],   // blue
+  ['rgba(244,114,182,0.06)', 'transparent'],  // pink
+  ['rgba(16,185,129,0.06)', 'transparent'],   // green
+];
+
+// Avatar gradients matching HomeScreen
+const AVATAR_GRADIENTS: [string, string][] = [
+  ['#667eea', '#764ba2'],
+  ['#f093fb', '#f5576c'],
+  ['#4facfe', '#00f2fe'],
+  ['#ffd700', '#ff8c00'],
+  ['#43e97b', '#38f9d7'],
+];
+
 export default function SquadScreen() {
+  const router = useRouter();
   const { squads, addSquad } = useSquadStore();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
@@ -34,322 +56,222 @@ export default function SquadScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Your Squads</Text>
-          <Text style={styles.subtitle}>{squads.length} active</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.createPill}
-          onPress={() => setShowCreate(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.createPillText}>Create +</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {squads.map((squad, idx) => {
-          const solBalance = squad.totalDeposited / 1_000_000_000;
-          const memberAvatars = squad.members.slice(0, 4);
-          const extraCount = Math.max(0, squad.members.length - 4);
-
-          return (
-            <Link key={squad.id} href={`/squad/${squad.id}`} asChild>
-              <TouchableOpacity style={styles.squadCard} activeOpacity={0.8}>
-                {/* Header row */}
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardEmoji}>{squad.emoji}</Text>
-                  <Text style={styles.cardName}>{squad.name}</Text>
-                </View>
-
-                {/* Members */}
-                <View style={styles.membersSection}>
-                  <Text style={styles.memberCount}>{squad.members.length} members</Text>
-                  <View style={styles.avatarStack}>
-                    {memberAvatars.map((m, i) => {
-                      const initial = m.displayName.charAt(0);
-                      return (
-                        <View
-                          key={m.pubkey + i}
-                          style={[
-                            styles.memberAvatar,
-                            { backgroundColor: m.color + '25', marginLeft: i > 0 ? -8 : 0, zIndex: 10 - i },
-                          ]}
-                        >
-                          <Text style={[styles.memberInitial, { color: m.color }]}>{initial}</Text>
-                        </View>
-                      );
-                    })}
-                    {extraCount > 0 && (
-                      <View style={[styles.memberAvatar, styles.memberAvatarExtra, { marginLeft: -8 }]}>
-                        <Text style={styles.memberExtraText}>+{extraCount}</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-
-                {/* Vault balance */}
-                <View style={styles.vaultSection}>
-                  <Text style={styles.vaultBalance}>{solBalance.toFixed(2)} SOL</Text>
-                  <Text style={styles.vaultUsd}>${squad.usdcBalance.toFixed(2)}</Text>
-                </View>
-
-                {/* Activity */}
-                <View style={styles.activityRow}>
-                  <View style={styles.activityDot} />
-                  <Text style={styles.activityText}>{squad.lastActivity}</Text>
-                </View>
-              </TouchableOpacity>
-            </Link>
-          );
-        })}
-      </ScrollView>
-
-      {/* Create Squad Modal */}
-      <Modal visible={showCreate} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Squad</Text>
-
-            <View style={styles.emojiRow}>
-              {['🏠', '✈️', '🎉', '💼', '🎮', '🍕'].map((e) => (
-                <TouchableOpacity
-                  key={e}
-                  style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}
-                  onPress={() => setNewEmoji(e)}
-                >
-                  <Text style={styles.emojiBtnText}>{e}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TextInput
-              style={styles.input}
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Squad name"
-              placeholderTextColor={COLORS.textTertiary}
-              autoFocus
-            />
-
-            <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
-              <Text style={styles.submitBtnText}>Create Squad</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setShowCreate(false)} style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
+    <ScreenWrapper>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        {/* Header */}
+        <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
+          <View>
+            <Text style={styles.title}>Your Squads</Text>
+            <Text style={styles.subtitle}>{squads.length} active</Text>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+          <AnimatedPressable
+            scaleDepth={0.93}
+            onPress={() => setShowCreate(true)}
+            style={styles.createGhost}
+          >
+            <Text style={styles.createGhostText}>Create +</Text>
+          </AnimatedPressable>
+        </Animated.View>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {squads.map((squad, idx) => {
+            const solBalance = squad.totalDeposited / 1_000_000_000;
+            const memberAvatars = squad.members.slice(0, 4);
+            const extraCount = Math.max(0, squad.members.length - 4);
+            const accentColors = CARD_ACCENT_COLORS[idx % CARD_ACCENT_COLORS.length];
+
+            return (
+              <Animated.View
+                key={squad.id}
+                entering={FadeInDown.delay(80 + idx * 80).duration(400).springify()}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => router.push(`/squad/${squad.id}`)}
+                  style={styles.squadCard}
+                >
+                  {/* Unique accent tint overlay */}
+                  <LinearGradient
+                    colors={accentColors}
+                    style={styles.accentOverlay}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0.8, y: 0.8 }}
+                  />
+
+                  {/* Header row */}
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardEmoji}>{squad.emoji}</Text>
+                    <Text style={styles.cardName}>{squad.name}</Text>
+                  </View>
+
+                  {/* Members */}
+                  <View style={styles.membersSection}>
+                    <Text style={styles.memberCount}>{squad.members.length} members</Text>
+                    <View style={styles.avatarStack}>
+                      {memberAvatars.map((m, i) => {
+                        const gradient = AVATAR_GRADIENTS[i % AVATAR_GRADIENTS.length];
+                        return (
+                          <LinearGradient
+                            key={m.pubkey + i}
+                            colors={gradient}
+                            style={[
+                              styles.memberAvatar,
+                              { marginLeft: i > 0 ? -6 : 0, zIndex: 10 - i },
+                            ]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                          >
+                            <Text style={styles.memberInitial}>
+                              {m.displayName.charAt(0)}
+                            </Text>
+                          </LinearGradient>
+                        );
+                      })}
+                      {extraCount > 0 && (
+                        <View style={[styles.memberAvatar, styles.extraAvatar, { marginLeft: -6 }]}>
+                          <Text style={styles.extraText}>+{extraCount}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Vault balance */}
+                  <View style={styles.vaultSection}>
+                    <Text style={styles.vaultBalance}>{solBalance.toFixed(2)} SOL</Text>
+                    <Text style={styles.vaultUsd}>${squad.usdcBalance.toFixed(2)}</Text>
+                  </View>
+
+                  {/* Activity */}
+                  <View style={styles.activityRow}>
+                    <View style={styles.activityDot} />
+                    <Text style={styles.activityText}>{squad.lastActivity}</Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
+        </ScrollView>
+
+        {/* Create Squad Modal */}
+        <Modal visible={showCreate} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Create Squad</Text>
+              <View style={styles.emojiRow}>
+                {['🏠', '✈️', '🎉', '💼', '🎮', '🍕'].map((e) => (
+                  <TouchableOpacity
+                    key={e}
+                    style={[styles.emojiBtn, newEmoji === e && styles.emojiBtnActive]}
+                    onPress={() => setNewEmoji(e)}
+                  >
+                    <Text style={styles.emojiBtnText}>{e}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={styles.input}
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="Squad name"
+                placeholderTextColor={COLORS.textTertiary}
+                autoFocus
+              />
+              <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
+                <Text style={styles.submitBtnText}>Create Squad</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowCreate(false)} style={styles.cancelBtn}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  container: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.md,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: SPACING.xl, paddingTop: SPACING.lg, paddingBottom: SPACING.md,
   },
-  title: {
-    fontSize: FONT_SIZES.title,
-    fontWeight: '800',
-    color: COLORS.text,
-    letterSpacing: -0.5,
+  title: { fontSize: FONT_SIZES.title, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
+  subtitle: { fontSize: FONT_SIZES.md, color: '#4B5563', marginTop: 2 },
+  createGhost: {
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
+    borderRadius: RADIUS.full, borderWidth: 1, borderColor: 'rgba(139,92,246,0.3)',
   },
-  subtitle: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
-  createPill: {
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.primarySubtle,
-  },
-  createPillText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
+  createGhostText: { fontSize: FONT_SIZES.md, fontWeight: '600', color: COLORS.primary },
   scrollContent: {
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.md,
-    paddingBottom: Platform.OS === 'ios' ? 120 : 100,
-    gap: 14,
+    paddingHorizontal: SPACING.xl, paddingTop: SPACING.md,
+    paddingBottom: Platform.OS === 'ios' ? 120 : 100, gap: 14,
   },
   // Squad Card
   squadCard: {
-    padding: SPACING.xl,
+    padding: SPACING.xl, borderRadius: RADIUS.xl, overflow: 'hidden',
+    position: 'relative', backgroundColor: '#111122',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)',
+  },
+  accentOverlay: {
+    ...StyleSheet.absoluteFillObject,
     borderRadius: RADIUS.xl,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  cardEmoji: {
-    fontSize: 24,
-  },
-  cardName: {
-    fontSize: FONT_SIZES.section,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.lg },
+  cardEmoji: { fontSize: 24 },
+  cardName: { fontSize: FONT_SIZES.section, fontWeight: '700', color: COLORS.text },
   membersSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: SPACING.lg,
   },
-  memberCount: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-  },
-  avatarStack: {
-    flexDirection: 'row',
-  },
+  memberCount: { fontSize: FONT_SIZES.md, color: '#6B7280' },
+  avatarStack: { flexDirection: 'row' },
   memberAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.surface,
+    width: 26, height: 26, borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#111122',
   },
   memberInitial: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10, fontWeight: '700', color: '#FFFFFF',
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
-  memberAvatarExtra: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  memberExtraText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  vaultSection: {
-    marginBottom: SPACING.lg,
-  },
-  vaultBalance: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.text,
-  },
-  vaultUsd: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    marginTop: 2,
-  },
+  extraAvatar: { backgroundColor: 'rgba(255,255,255,0.08)' },
+  extraText: { fontSize: 9, fontWeight: '600', color: '#6B7280' },
+  vaultSection: { marginBottom: SPACING.lg },
+  vaultBalance: { fontSize: 24, fontWeight: '800', color: COLORS.text, fontVariant: ['tabular-nums'] },
+  vaultUsd: { fontSize: FONT_SIZES.md, color: '#6B7280', marginTop: 2, fontVariant: ['tabular-nums'] },
   activityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.divider,
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+    paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.03)',
   },
-  activityDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.success,
-  },
-  activityText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
+  activityDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: COLORS.success },
+  activityText: { fontSize: FONT_SIZES.sm, color: '#4B5563' },
   // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'flex-end',
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   modalContent: {
-    backgroundColor: COLORS.surfaceElevated,
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
-    padding: SPACING.xxl,
-    paddingBottom: Platform.OS === 'ios' ? 40 : SPACING.xxl,
+    backgroundColor: '#1A1A35', borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl,
+    padding: SPACING.xxl, paddingBottom: Platform.OS === 'ios' ? 40 : SPACING.xxl,
   },
-  modalTitle: {
-    fontSize: FONT_SIZES.section,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: SPACING.xl,
-    textAlign: 'center',
-  },
-  emojiRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: SPACING.md,
-    marginBottom: SPACING.xl,
-  },
+  modalTitle: { fontSize: FONT_SIZES.section, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.xl, textAlign: 'center' },
+  emojiRow: { flexDirection: 'row', justifyContent: 'center', gap: SPACING.md, marginBottom: SPACING.xl },
   emojiBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 44, height: 44, borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)', alignItems: 'center', justifyContent: 'center',
   },
-  emojiBtnActive: {
-    backgroundColor: COLORS.primarySubtle,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  emojiBtnText: {
-    fontSize: 22,
-  },
+  emojiBtnActive: { backgroundColor: 'rgba(139,92,246,0.08)', borderWidth: 1, borderColor: COLORS.primary },
+  emojiBtnText: { fontSize: 22 },
   input: {
-    backgroundColor: COLORS.surfaceInput,
-    borderRadius: RADIUS.md,
-    padding: SPACING.lg,
-    fontSize: FONT_SIZES.xl,
-    color: COLORS.text,
-    marginBottom: SPACING.xl,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: '#0D0D1A', borderRadius: RADIUS.md, padding: SPACING.lg,
+    fontSize: FONT_SIZES.xl, color: COLORS.text, marginBottom: SPACING.xl,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)',
   },
-  submitBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  submitBtnText: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  cancelBtn: {
-    padding: SPACING.md,
-    alignItems: 'center',
-  },
-  cancelBtnText: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-  },
+  submitBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.lg, padding: SPACING.lg, alignItems: 'center', marginBottom: SPACING.md },
+  submitBtnText: { fontSize: FONT_SIZES.xl, fontWeight: '700', color: COLORS.text },
+  cancelBtn: { padding: SPACING.md, alignItems: 'center' },
+  cancelBtnText: { fontSize: FONT_SIZES.md, color: '#6B7280' },
 });

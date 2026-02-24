@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, Platform, Animated } from 'react-native';
 import { Tabs } from 'expo-router';
 import { COLORS, FONT_SIZES } from '../../src/utils/constants';
 
@@ -7,12 +7,21 @@ function TabIcon({ icon, iconFilled, label, focused }: { icon: string; iconFille
     const scale = useRef(new Animated.Value(1)).current;
 
     useEffect(() => {
-        Animated.spring(scale, {
-            toValue: focused ? 1.1 : 1,
-            friction: 6,
-            tension: 300,
-            useNativeDriver: true,
-        }).start();
+        if (focused) {
+            // Micro-bounce: 0.8 → 1.1 → 1.0
+            Animated.sequence([
+                Animated.timing(scale, {
+                    toValue: 0.8, duration: 50, useNativeDriver: true,
+                }),
+                Animated.spring(scale, {
+                    toValue: 1, friction: 3, tension: 400, useNativeDriver: true,
+                }),
+            ]).start();
+        } else {
+            Animated.timing(scale, {
+                toValue: 1, duration: 150, useNativeDriver: true,
+            }).start();
+        }
     }, [focused]);
 
     return (
@@ -20,9 +29,7 @@ function TabIcon({ icon, iconFilled, label, focused }: { icon: string; iconFille
             <Text style={[styles.tabIconText, focused && styles.tabIconTextActive]}>
                 {focused ? iconFilled : icon}
             </Text>
-            {focused && (
-                <Text style={styles.tabLabel}>{label}</Text>
-            )}
+            {focused && <Text style={styles.tabLabel}>{label}</Text>}
         </Animated.View>
     );
 }
@@ -34,7 +41,7 @@ export default function TabsLayout() {
                 headerShown: false,
                 tabBarStyle: styles.tabBar,
                 tabBarActiveTintColor: COLORS.primary,
-                tabBarInactiveTintColor: COLORS.textTertiary,
+                tabBarInactiveTintColor: '#4B5563',
                 tabBarShowLabel: false,
             }}
         >
@@ -88,9 +95,9 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
     tabBar: {
-        backgroundColor: 'rgba(6, 6, 14, 0.92)',
+        backgroundColor: 'rgba(6, 6, 14, 0.94)',
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
+        borderTopColor: 'rgba(255,255,255,0.03)',
         height: Platform.OS === 'ios' ? 88 : 72,
         paddingTop: 8,
         paddingBottom: Platform.OS === 'ios' ? 28 : 8,
@@ -108,13 +115,13 @@ const styles = StyleSheet.create({
     },
     tabIconText: {
         fontSize: 20,
-        color: COLORS.textTertiary,
+        color: '#4B5563',
     },
     tabIconTextActive: {
         color: COLORS.primary,
     },
     tabLabel: {
-        fontSize: FONT_SIZES.xs,
+        fontSize: 10,
         color: COLORS.primary,
         fontWeight: '600',
         marginTop: 1,
@@ -133,12 +140,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         shadowColor: COLORS.primary,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
+        shadowOpacity: 0.3,
         shadowRadius: 12,
         elevation: 8,
     },
     payButtonActive: {
-        backgroundColor: COLORS.primaryDark,
+        backgroundColor: '#7C3AED',
         shadowOpacity: 0.5,
     },
     payIcon: {

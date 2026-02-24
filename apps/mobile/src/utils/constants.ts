@@ -1,17 +1,18 @@
 export const COLORS = {
-  // Core backgrounds (near-black, Cash App depth)
-  background: '#06060E',
-  surface: '#111122',
-  surfaceElevated: '#1A1A35',
-  surfaceInput: '#0D0D1A',
+  // Core backgrounds (deep space/charcoal base)
+  background: '#04040a',
+  surface: '#0d0d14',
+  surfaceElevated: '#1a1824',
+  surfaceInput: '#14121a',
 
-  // Accent
-  primary: '#8B5CF6',
-  primaryDark: '#7C3AED',
-  primaryLight: '#A78BFA',
-  primaryGlow: 'rgba(139, 92, 246, 0.15)',
-  primarySubtle: 'rgba(139, 92, 246, 0.08)',
-  secondary: '#6366F1',
+  // Accent (Warm/Cinematic Purple & Amber)
+  primary: '#b175ff',
+  primaryDark: '#8a4dee',
+  primaryLight: '#d2a8ff',
+  primaryGlow: 'rgba(177, 117, 255, 0.15)',
+  primarySubtle: 'rgba(177, 117, 255, 0.08)',
+  secondary: '#ff9c7a',
+  secondaryGlow: 'rgba(255, 156, 122, 0.15)',
 
   // Functional
   success: '#10B981',

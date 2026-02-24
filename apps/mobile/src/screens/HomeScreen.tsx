@@ -143,36 +143,42 @@ export default function HomeScreen() {
           {/* Action Pill Bar — Receive | + | Send (wallet-style) */}
           <Animated.View
             entering={FadeInDown.delay(200).duration(400).springify()}
-            style={styles.actionPillBar}
+            style={styles.actionPillOuter}
           >
-            <AnimatedPressable
-              scaleDepth={0.95}
-              style={styles.actionPillLeft}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            >
-              <Text style={styles.actionPillIcon}>↓</Text>
-              <Text style={styles.actionPillLabel}>Receive</Text>
-            </AnimatedPressable>
+            <View style={styles.actionPillBar}>
+              <AnimatedPressable
+                scaleDepth={0.95}
+                style={styles.actionPillLeft}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              >
+                <Text style={styles.actionPillIcon}>↙</Text>
+                <Text style={styles.actionPillLabel}>Receive</Text>
+              </AnimatedPressable>
+
+              <AnimatedPressable
+                scaleDepth={0.95}
+                style={styles.actionPillRight}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/pay'); }}
+              >
+                <Text style={styles.actionPillLabel}>Send</Text>
+                <Text style={styles.actionPillIcon}>↗</Text>
+              </AnimatedPressable>
+            </View>
+
+            {/* Overlapping Center Orb */}
             <AnimatedPressable
               scaleDepth={0.9}
+              style={styles.actionPillCenterWrap}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/pay'); }}
             >
               <LinearGradient
-                colors={['#A78BFA', '#7C3AED']}
+                colors={['#f0f0f5', '#d2a8ff', '#b175ff']}
                 style={styles.actionPillCenter}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
                 <Text style={styles.actionPillCenterIcon}>+</Text>
               </LinearGradient>
-            </AnimatedPressable>
-            <AnimatedPressable
-              scaleDepth={0.95}
-              style={styles.actionPillRight}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/pay'); }}
-            >
-              <Text style={styles.actionPillLabel}>Send</Text>
-              <Text style={styles.actionPillIcon}>↗</Text>
             </AnimatedPressable>
           </Animated.View>
 
@@ -234,39 +240,49 @@ export default function HomeScreen() {
                 <Animated.View
                   key={tx.id}
                   entering={FadeInDown.delay(350 + index * 50).duration(400).springify()}
+                  style={styles.txRowContainer}
                 >
-                  <AnimatedPressable scaleDepth={0.99} style={styles.txRow}>
+                  <LinearGradient
+                    colors={gradient}
+                    style={styles.txAvatar}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Text style={styles.txAvatarText}>{initial}</Text>
+                  </LinearGradient>
+
+                  <View style={styles.txBubbleWrap}>
+                    {/* Glowing Border effect using gradient behind */}
                     <LinearGradient
-                      colors={gradient}
-                      style={styles.txAvatar}
+                      colors={['rgba(255, 156, 122, 0.4)', 'rgba(255, 156, 122, 0.05)', 'transparent']}
+                      style={styles.txBubbleGlow}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
-                    >
-                      <Text style={styles.txAvatarText}>{initial}</Text>
-                    </LinearGradient>
-                    <View style={styles.txInfo}>
-                      <Text style={styles.txName}>{name}</Text>
-                      <Text style={styles.txMemo} numberOfLines={1}>
-                        {tx.memo || `${badge.label.toLowerCase()} • ${tx.amount} ${tx.currency}`}
-                      </Text>
-                    </View>
-                    <View style={styles.txRight}>
-                      <Text style={[styles.txAmount, isReceive && styles.txAmountGreen]}>
-                        {isReceive ? '+' : '-'}{tx.amount} {tx.currency}
-                      </Text>
-                      <Text style={styles.txTime}>{formatTimeAgo(tx.timestamp)}</Text>
-                    </View>
-                  </AnimatedPressable>
-                  {index < MOCK_TRANSACTIONS.length - 1 && (
-                    <View style={styles.txDivider} />
-                  )}
+                    />
+
+                    <AnimatedPressable scaleDepth={0.99} style={styles.txBubble}>
+                      <View style={styles.txBubbleHeader}>
+                        <Text style={styles.txName}>{name}</Text>
+                        <Text style={styles.txTime}>{formatTimeAgo(tx.timestamp)}</Text>
+                      </View>
+
+                      <View style={styles.txBubbleContent}>
+                        <Text style={styles.txMemo} numberOfLines={1}>
+                          {tx.memo || `${badge.label.toLowerCase()}`}
+                        </Text>
+                        <Text style={[styles.txAmount, isReceive && styles.txAmountGreen]}>
+                          {isReceive ? '+' : '-'}{tx.amount} {tx.currency}
+                        </Text>
+                      </View>
+                    </AnimatedPressable>
+                  </View>
                 </Animated.View>
               );
             })
           )}
         </ScrollView>
       </SafeAreaView>
-    </ScreenWrapper>
+    </ScreenWrapper >
   );
 }
 
@@ -317,48 +333,64 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.md,
   },
   // Action Pill Bar — wallet-style Receive | + | Send
-  actionPillBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  actionPillOuter: {
     marginHorizontal: SPACING.xl,
     marginTop: SPACING.md,
     marginBottom: SPACING.lg,
-    backgroundColor: 'rgba(17, 17, 34, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    height: 72, // taller to fit the overlapping orb
+  },
+  actionPillBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0a0a0f', // deep solid black like reference
     borderRadius: 999,
-    height: 52,
+    height: 60,
+    width: '100%',
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.08)',
-    ...Platform.select({
-      web: { backdropFilter: 'blur(12px)' } as any,
-      default: {},
-    }),
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   actionPillLeft: {
     flex: 1, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'center',
-    gap: 6, height: '100%',
+    gap: 8, height: '100%',
+    paddingRight: 20, // keep clear of center orb
   },
   actionPillRight: {
     flex: 1, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'center',
-    gap: 6, height: '100%',
-  },
-  actionPillCenter: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3, shadowRadius: 8,
-  },
-  actionPillCenterIcon: {
-    fontSize: 22, fontWeight: '600', color: '#FFF',
-  },
-  actionPillIcon: {
-    fontSize: 14, fontWeight: '600', color: COLORS.textSecondary,
+    gap: 8, height: '100%',
+    paddingLeft: 20, // keep clear of center orb
   },
   actionPillLabel: {
-    fontSize: 14, fontWeight: '600', color: COLORS.text,
+    fontSize: 16, fontWeight: '600', color: COLORS.text,
+  },
+  actionPillIcon: {
+    fontSize: 16, color: '#a1a1aa', fontWeight: '500',
+  },
+  actionPillCenterWrap: {
+    position: 'absolute',
+    top: -4, // overlap the top edge
+    alignSelf: 'center',
+    backgroundColor: '#0a0a0f', // gap behind the orb
+    borderRadius: 36,
+    padding: 6, // border gap
+  },
+  actionPillCenter: {
+    width: 60, height: 60,
+    borderRadius: 30,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#d2a8ff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  actionPillCenterIcon: {
+    fontSize: 28, color: '#04040a', fontWeight: '400',
   },
   // Quick Access Chips
   quickRow: {
@@ -400,17 +432,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(139, 92, 246, 0.08)',
   },
   seeAll: { fontSize: 12, fontWeight: '600', color: COLORS.primary },
-  // Transaction rows — Chat-style (larger avatars)
-  txRow: {
+  // Transaction rows — Chat-style bubbles
+  txRowContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: SPACING.xl,
-    height: 72,
+    marginBottom: SPACING.md,
+    alignItems: 'flex-start', // align to top of bubble
   },
   txAvatar: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center',
     marginRight: SPACING.md,
+    marginTop: 2, // Slight offset to align with bubble text
   },
   txAvatarText: {
     fontSize: 16, fontWeight: '700', color: '#FFFFFF',
@@ -418,25 +451,54 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
-  txInfo: { flex: 1 },
+  txBubbleWrap: {
+    flex: 1,
+    position: 'relative',
+    borderRadius: 20,
+    overflow: 'hidden', // Contain the glow
+  },
+  txBubbleGlow: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    opacity: 0.6,
+  },
+  txBubble: {
+    margin: 1, // Space for the glow to show through as a border
+    backgroundColor: '#111116', // inner dark background
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  txBubbleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
   txName: {
-    fontSize: 15, fontWeight: '600', color: COLORS.text,
-    marginBottom: 2,
+    fontSize: 15, fontWeight: '600', color: '#f0f0f5',
+    flex: 1,
+    marginRight: 8,
+  },
+  txTime: {
+    fontSize: 11, color: '#6e6e78',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  txBubbleContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   txMemo: {
-    fontSize: 13, color: '#4B5563',
+    fontSize: 14, color: '#a1a1aa',
+    fontStyle: 'italic',
+    flex: 1,
+    marginRight: 12,
   },
-  txRight: { alignItems: 'flex-end' },
   txAmount: {
-    fontSize: 15, fontWeight: '700', color: COLORS.text,
-    fontVariant: ['tabular-nums'], marginBottom: 2,
+    fontSize: 14, fontWeight: '600', color: '#FFF',
+    fontVariant: ['tabular-nums'],
   },
   txAmountGreen: { color: COLORS.success },
-  txTime: { fontSize: 12, color: '#4B5563' },
-  txDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    marginLeft: 64 + SPACING.xl,
-    marginRight: SPACING.xl,
-  },
 });

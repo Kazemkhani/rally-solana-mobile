@@ -27,10 +27,7 @@ function TabIcon({ icon, iconFilled, label, focused }: { icon: string; iconFille
     return (
         <Animated.View style={[styles.tabIconContainer, { transform: [{ scale }] }]}>
             {/* Active indicator dot */}
-            <View style={[
-                styles.tabIconBg,
-                focused && styles.tabIconBgActive,
-            ]}>
+            <View style={styles.tabIconBg}>
                 <Text style={[styles.tabIconText, focused && styles.tabIconTextActive]}>
                     {focused ? iconFilled : icon}
                 </Text>
@@ -73,12 +70,12 @@ export default function TabsLayout() {
                     tabBarIcon: ({ focused }) => (
                         <View style={styles.payButtonOuter}>
                             <LinearGradient
-                                colors={['#A78BFA', '#7C3AED', '#6D28D9']}
+                                colors={['#b175ff', '#ff9c7a']}
                                 style={[styles.payButton, focused && styles.payButtonActive]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                             >
-                                <Text style={styles.payIcon}>↑</Text>
+                                <Text style={styles.payIcon}>+</Text>
                             </LinearGradient>
                             {/* Gradient ring glow */}
                             <View style={styles.payGlow} />
@@ -108,31 +105,22 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
     tabBar: {
-        backgroundColor: 'rgba(12, 10, 22, 0.88)',
+        backgroundColor: '#111116', // solid dark charcoal
         borderTopWidth: 0,
         height: 64,
         paddingTop: 6,
         paddingBottom: 6,
-        paddingHorizontal: 8,
+        paddingHorizontal: 12,
         position: 'absolute',
         bottom: Platform.OS === 'ios' ? 28 : 16,
         left: 20,
         right: 20,
         borderRadius: 999,
         elevation: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(139, 92, 246, 0.1)',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.6,
         shadowRadius: 24,
-        ...Platform.select({
-            web: {
-                backdropFilter: 'blur(24px)',
-                WebkitBackdropFilter: 'blur(24px)',
-            } as any,
-            default: {},
-        }),
     },
     tabIconContainer: {
         alignItems: 'center',
@@ -141,19 +129,15 @@ const styles = StyleSheet.create({
     },
     tabIconBg: {
         width: 36, height: 36,
-        borderRadius: 18,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    tabIconBgActive: {
-        backgroundColor: 'rgba(139, 92, 246, 0.15)',
-    },
     tabIconText: {
         fontSize: 20,
-        color: '#4B5563',
+        color: '#6e6e78',
     },
     tabIconTextActive: {
-        color: COLORS.primary,
+        color: '#f0f0f5', // off-white for highlighted state
     },
     tabLabel: {
         fontSize: 9,
@@ -165,32 +149,35 @@ const styles = StyleSheet.create({
     payButtonOuter: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: -20,
+        marginTop: -32, // More overlap!
+        backgroundColor: '#0a0a0f', // Match background behind pill
+        borderRadius: 999,
+        padding: 6, // border gap
     },
     payButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 14,
+        shadowColor: '#ff9c7a',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.45,
+        shadowRadius: 16,
         elevation: 10,
     },
     payButtonActive: {
-        shadowOpacity: 0.5,
+        shadowOpacity: 0.6,
     },
     payGlow: {
         position: 'absolute',
-        width: 58, height: 58,
-        borderRadius: 29,
-        borderWidth: 1.5,
-        borderColor: 'rgba(167, 139, 250, 0.25)',
+        width: 68, height: 68,
+        borderRadius: 34,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 156, 122, 0.15)',
     },
     payIcon: {
-        fontSize: 22,
+        fontSize: 26,
         color: '#FFFFFF',
         fontWeight: '700',
     },

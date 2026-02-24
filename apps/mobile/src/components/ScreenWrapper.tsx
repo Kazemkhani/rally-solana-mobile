@@ -46,15 +46,15 @@ export default function ScreenWrapper({ children, accentStrength = 0.04 }: Props
         // Orb 2: Smooth infinite floating figure-eight like motion
         orb2Tx.value = withRepeat(
             withSequence(
-                withTiming(40, { duration: 10000, easing: Easing.inOut(Easing.sin) }),
-                withTiming(-20, { duration: 12000, easing: Easing.inOut(Easing.sin) })
+                withTiming(40, { duration: 10000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(-20, { duration: 12000, easing: Easing.inOut(Easing.quad) })
             ),
             -1, true
         );
         orb2Ty.value = withRepeat(
             withSequence(
-                withTiming(-30, { duration: 11000, easing: Easing.inOut(Easing.cos) }),
-                withTiming(20, { duration: 9000, easing: Easing.inOut(Easing.cos) })
+                withTiming(-30, { duration: 11000, easing: Easing.inOut(Easing.quad) }),
+                withTiming(20, { duration: 9000, easing: Easing.inOut(Easing.quad) })
             ),
             -1, true
         );

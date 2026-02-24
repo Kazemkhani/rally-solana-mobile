@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ScreenWrapper from '../components/ScreenWrapper';
 import AnimatedPressable from '../components/AnimatedPressable';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { MOCK_USER } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
@@ -42,9 +43,9 @@ export default function ProfileScreen() {
   });
 
   const tokenData = [
-    { symbol: 'SOL', name: 'Solana', balance, usdValue: balance * 145, color: '#9945FF', icon: '◎' },
-    { symbol: 'USDC', name: 'USD Coin', balance: usdcBalance, usdValue: usdcBalance, color: '#2775CA', icon: '$' },
-    { symbol: 'SKR', name: 'Seeker', balance: skrBalance, usdValue: skrBalance * 0.20, color: '#F59E0B', icon: '✦' },
+    { symbol: 'SOL', name: 'Solana', balance, usdValue: balance * 145, gradient: ['#9945FF', '#6366F1'] as [string, string], icon: '◎' },
+    { symbol: 'USDC', name: 'USD Coin', balance: usdcBalance, usdValue: usdcBalance, gradient: ['#2775CA', '#1a5fb4'] as [string, string], icon: '$' },
+    { symbol: 'SKR', name: 'Seeker', balance: skrBalance, usdValue: skrBalance * 0.20, gradient: ['#F59E0B', '#D97706'] as [string, string], icon: '✦' },
   ];
 
   const handleCopy = () => {
@@ -130,9 +131,14 @@ export default function ProfileScreen() {
               opacityDepth={0.9}
               style={[styles.tokenRow, i < tokenData.length - 1 && styles.tokenRowBorder]}
             >
-              <View style={[styles.tokenIcon, { backgroundColor: token.color + '18' }]}>
-                <Text style={[styles.tokenIconText, { color: token.color }]}>{token.icon}</Text>
-              </View>
+              <LinearGradient
+                colors={token.gradient}
+                style={styles.tokenIcon}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.tokenIconText}>{token.icon}</Text>
+              </LinearGradient>
               <View style={styles.tokenInfo}>
                 <Text style={styles.tokenName}>{token.name}</Text>
                 <Text style={styles.tokenSymbol}>{token.symbol}</Text>
@@ -353,7 +359,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: SPACING.md,
   },
-  tokenIconText: { fontSize: 18, fontWeight: '700' },
+  tokenIconText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
   tokenInfo: { flex: 1 },
   tokenName: { fontSize: FONT_SIZES.lg, fontWeight: '600', color: COLORS.text },
   tokenSymbol: { fontSize: 12, color: '#4B5563', marginTop: 1 },

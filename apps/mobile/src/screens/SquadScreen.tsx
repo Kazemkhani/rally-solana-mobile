@@ -21,6 +21,13 @@ const CARD_ACCENT_COLORS: { gradient: [string, string]; border: string; glow: st
   { gradient: ['rgba(16,185,129,0.12)', 'transparent'], border: 'rgba(16,185,129,0.08)', glow: 'rgba(16,185,129,0.5)' },
 ];
 
+const ACCENT_BORDER_COLORS = [
+  'rgba(245,158,11,0.35)',
+  'rgba(59,130,246,0.35)',
+  'rgba(244,114,182,0.35)',
+  'rgba(16,185,129,0.35)',
+];
+
 // Avatar gradients matching HomeScreen
 const AVATAR_GRADIENTS: [string, string][] = [
   ['#667eea', '#764ba2'],
@@ -91,7 +98,7 @@ export default function SquadScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => router.push(`/squad/${squad.id}`)}
-                  style={[styles.squadCard, { borderColor: accent.border }]}
+                  style={[styles.squadCard, { borderColor: accent.border, borderLeftColor: ACCENT_BORDER_COLORS[idx % 4] }]}
                 >
                   {/* Glass background */}
                   <LinearGradient
@@ -227,8 +234,14 @@ const styles = StyleSheet.create({
   // Squad Card
   squadCard: {
     padding: SPACING.xl, borderRadius: RADIUS.xl, overflow: 'hidden',
-    position: 'relative', backgroundColor: 'transparent',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+    position: 'relative', backgroundColor: 'rgba(17, 17, 34, 0.6)',
+    borderWidth: 1, borderLeftWidth: 2.5, borderColor: 'rgba(139, 92, 246, 0.08)',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 12, elevation: 6,
+    ...Platform.select({
+      web: { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' },
+      default: {},
+    }),
   },
   topAccentLine: {
     position: 'absolute', top: 0, left: '15%', right: '15%', height: 1.5,

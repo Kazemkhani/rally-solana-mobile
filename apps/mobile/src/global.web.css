@@ -1,0 +1,35 @@
+/* Rally — Web-only polish */
+/* Applied via Platform.OS === 'web' injection in _layout.tsx */
+
+/* Hide scrollbars — app-like feel */
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* No text selection — feels like native app, not webpage */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* All interactive elements get pointer cursor */
+[role="button"],
+button,
+a,
+[data-pressable],
+[onclick] {
+  cursor: pointer;
+}
+
+/* Smooth transitions on all cards and interactive elements */
+[data-card],
+[role="button"] {
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.2s ease;
+}
+
+/* Tabular numbers globally — prevents jumping */
+[data-balance],
+[data-amount] {
+  font-variant-numeric: tabular-nums;
+}

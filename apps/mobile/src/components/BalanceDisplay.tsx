@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -165,6 +165,19 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(139, 92, 246, 0.12)',
     alignItems: 'center',
     overflow: 'hidden',
+    backgroundColor: 'rgba(17, 17, 34, 0.6)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+      },
+      default: {},
+    }),
   },
   topAccent: {
     position: 'absolute', top: 0,

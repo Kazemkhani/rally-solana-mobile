@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { COLORS } from '../src/utils/constants';
 import SplashScreen from '../src/components/SplashScreen';
+
+// Web-only global CSS polish
+if (Platform.OS === 'web') {
+    require('../src/global.web.css');
+}
 
 const queryClient = new QueryClient({
     defaultOptions: {

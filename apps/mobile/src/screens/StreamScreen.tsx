@@ -240,9 +240,15 @@ const styles = StyleSheet.create({
   // Stream Card
   streamCard: {
     padding: SPACING.xl, borderRadius: RADIUS.xl,
-    backgroundColor: 'transparent',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(17, 17, 34, 0.6)',
+    borderWidth: 1, borderColor: 'rgba(139, 92, 246, 0.08)',
     marginBottom: 14, position: 'relative', overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 12, elevation: 6,
+    ...Platform.select({
+      web: { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' },
+      default: {},
+    }),
   },
   topGlowLine: {
     position: 'absolute', top: 0, left: '15%', right: '15%', height: 1.5,

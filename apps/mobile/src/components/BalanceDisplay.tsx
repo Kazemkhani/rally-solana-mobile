@@ -1,14 +1,13 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withTiming,
   withRepeat,
   withSequence,
   withDelay,
+  withTiming,
   Easing,
   interpolate,
 } from 'react-native-reanimated';
@@ -23,23 +22,15 @@ interface Props {
 
 export default function BalanceDisplay({ solBalance, usdcBalance }: Props) {
   const totalUsd = solBalance * 145 + usdcBalance;
-
-  // Count-up animation
-  const countUp = useSharedValue(0);
-  // Shimmer sweep
   const shimmer = useSharedValue(-300);
 
   useEffect(() => {
-    // Count from 0 to 1 over 1.2s
-    countUp.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.cubic) });
-
-    // Shimmer: sweep every 4s with 2s pause
     shimmer.value = withDelay(
-      1000,
+      1500,
       withRepeat(
         withSequence(
           withTiming(SCREEN_WIDTH + 300, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-          withDelay(4000, withTiming(-300, { duration: 0 })),
+          withDelay(5000, withTiming(-300, { duration: 0 })),
         ),
         -1,
         false,
@@ -51,68 +42,75 @@ export default function BalanceDisplay({ solBalance, usdcBalance }: Props) {
     transform: [{ translateX: shimmer.value }],
   }));
 
-  const countStyle = useAnimatedStyle(() => {
-    const val = interpolate(countUp.value, [0, 1], [0, totalUsd]);
-    return { opacity: 1 } as any; // just for the hook — we read the value below
-  });
-
-  // For the count-up display, we use a simpler approach since we need formatted text
-  const displayAmount = totalUsd; // Full amount — the card fades in with entrance anim
-
-  const CardWrapper = Platform.OS === 'web' ? View : BlurView;
-  const cardProps = Platform.OS === 'web'
-    ? { style: [styles.card, { backgroundColor: 'rgba(20, 20, 43, 0.75)' }] }
-    : { intensity: 40, tint: 'dark' as const, style: styles.card };
-
   return (
     <View style={styles.container}>
       {/* Glowing Orbs */}
-      <View style={styles.glowContainer}>
-        <LinearGradient
-          colors={['rgba(139, 92, 246, 0.35)', 'transparent']}
-          style={styles.orbTopLeft}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-        <LinearGradient
-          colors={['transparent', 'rgba(59, 130, 246, 0.25)']}
-          style={styles.orbBottomRight}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        />
-      </View>
+      <LinearGradient
+        colors={['rgba(139, 92, 246, 0.3)', 'transparent']}
+        style={styles.orbTopLeft}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(59, 130, 246, 0.2)']}
+        style={styles.orbBottomRight}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
-      {/* Glassmorphism Card */}
-      <CardWrapper {...cardProps}>
-        {/* Top accent glow line */}
+      {/* Glassmorphism Card — using LinearGradient overlay instead of BlurView */}
+      <View style={styles.card}>
+        {/* Glass overlay */}
         <LinearGradient
-          colors={['transparent', 'rgba(139, 92, 246, 0.4)', 'transparent']}
+          colors={['rgba(30, 30, 60, 0.85)', 'rgba(15, 15, 35, 0.9)']}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
+
+        {/* Top accent glow */}
+        <LinearGradient
+          colors={['transparent', 'rgba(139, 92, 246, 0.5)', 'rgba(59, 130, 246, 0.3)', 'transparent']}
           style={styles.topAccent}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         />
 
+        {/* Inner glow highlight */}
+        <LinearGradient
+          colors={['rgba(139, 92, 246, 0.08)', 'transparent']}
+          style={styles.innerGlow}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+
         <Text style={styles.label}>TOTAL BALANCE</Text>
         <Text style={styles.totalUsd}>
-          ${displayAmount.toLocaleString('en-US', {
+          ${totalUsd.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}
         </Text>
 
         <View style={styles.profitBadge}>
-          <Text style={styles.profitText}>+2.4% today</Text>
+          <Text style={styles.profitText}>↑ 2.4% today</Text>
         </View>
 
         <View style={styles.tokenRow}>
           <View style={styles.tokenItem}>
-            <View style={[styles.tokenDot, { backgroundColor: '#9945FF' }]} />
+            <LinearGradient
+              colors={['#9945FF', '#7B3FE4']}
+              style={styles.tokenDot}
+            />
             <Text style={styles.tokenAmount}>{solBalance.toFixed(2)}</Text>
             <Text style={styles.tokenSymbol}>SOL</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.tokenItem}>
-            <View style={[styles.tokenDot, { backgroundColor: '#2775CA' }]} />
+            <LinearGradient
+              colors={['#2775CA', '#1A5FA0']}
+              style={styles.tokenDot}
+            />
             <Text style={styles.tokenAmount}>
               {usdcBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </Text>
@@ -120,7 +118,10 @@ export default function BalanceDisplay({ solBalance, usdcBalance }: Props) {
           </View>
           <View style={styles.divider} />
           <View style={styles.tokenItem}>
-            <View style={[styles.tokenDot, { backgroundColor: '#F59E0B' }]} />
+            <LinearGradient
+              colors={['#F59E0B', '#D97706']}
+              style={styles.tokenDot}
+            />
             <Text style={styles.tokenAmount}>7.50</Text>
             <Text style={styles.tokenSymbol}>SKR</Text>
           </View>
@@ -129,13 +130,13 @@ export default function BalanceDisplay({ solBalance, usdcBalance }: Props) {
         {/* Shimmer sweep */}
         <Animated.View style={[styles.shimmer, shimmerStyle]}>
           <LinearGradient
-            colors={['transparent', 'rgba(255,255,255,0.04)', 'transparent']}
+            colors={['transparent', 'rgba(255,255,255,0.06)', 'transparent']}
             style={StyleSheet.absoluteFill}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
           />
         </Animated.View>
-      </CardWrapper>
+      </View>
     </View>
   );
 }
@@ -148,108 +149,66 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.xl,
     overflow: 'hidden',
   },
-  glowContainer: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.8,
-  },
   orbTopLeft: {
-    position: 'absolute',
-    top: -50,
-    left: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    position: 'absolute', top: -50, left: -50,
+    width: 200, height: 200, borderRadius: 100,
   },
   orbBottomRight: {
-    position: 'absolute',
-    bottom: -60,
-    right: -20,
-    width: 250,
-    height: 250,
-    borderRadius: 125,
+    position: 'absolute', bottom: -60, right: -20,
+    width: 250, height: 250, borderRadius: 125,
   },
   card: {
     borderRadius: RADIUS.xl,
     padding: SPACING.xxl,
+    paddingTop: SPACING.xl,
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.15)',
+    borderColor: 'rgba(139, 92, 246, 0.12)',
     alignItems: 'center',
     overflow: 'hidden',
   },
   topAccent: {
-    position: 'absolute',
-    top: 0,
-    left: '15%',
-    right: '15%',
-    height: 1,
+    position: 'absolute', top: 0,
+    left: '10%', right: '10%', height: 1.5,
+  },
+  innerGlow: {
+    position: 'absolute', top: 0, left: 0,
+    width: '60%', height: '60%', borderRadius: RADIUS.xl,
   },
   label: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#4B5563',
-    letterSpacing: 3,
-    marginBottom: SPACING.xs,
+    fontSize: 10, fontWeight: '600', color: '#6B7280',
+    letterSpacing: 3, marginBottom: SPACING.sm,
   },
   totalUsd: {
-    fontSize: 48,
-    fontWeight: '800',
-    color: COLORS.text,
-    letterSpacing: -2,
-    fontVariant: ['tabular-nums'],
+    fontSize: 48, fontWeight: '800', color: COLORS.text,
+    letterSpacing: -2, fontVariant: ['tabular-nums'],
   },
   profitBadge: {
-    backgroundColor: COLORS.success + '20',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-    marginTop: SPACING.xs,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: SPACING.md, paddingVertical: 4,
+    borderRadius: RADIUS.full, marginTop: SPACING.sm,
+    borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.15)',
   },
   profitText: {
-    color: COLORS.success,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    color: COLORS.success, fontSize: 12, fontWeight: '600',
   },
   tokenRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: SPACING.xl,
-    gap: SPACING.lg,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
+    flexDirection: 'row', alignItems: 'center',
+    marginTop: SPACING.xl, gap: SPACING.lg,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: SPACING.lg, paddingVertical: 10,
     borderRadius: RADIUS.full,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)',
   },
-  tokenItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  tokenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
+  tokenItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tokenDot: { width: 8, height: 8, borderRadius: 4 },
   tokenAmount: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.text,
+    fontSize: FONT_SIZES.md, fontWeight: '600', color: COLORS.text,
     fontVariant: ['tabular-nums'],
   },
-  tokenSymbol: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textMuted,
-    fontWeight: '600',
-  },
-  divider: {
-    width: 1,
-    height: 16,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
+  tokenSymbol: { fontSize: FONT_SIZES.xs, color: '#6B7280', fontWeight: '600' },
+  divider: { width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.06)' },
   shimmer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 150,
+    position: 'absolute', top: 0, bottom: 0, width: 120,
     transform: [{ skewX: '-15deg' }],
   },
 });

@@ -14,11 +14,11 @@ import { useSquadStore } from '../stores/squads';
 import { MOCK_MEMBERS } from '../data/mockData';
 
 // Per-card accent tints via LinearGradient
-const CARD_ACCENT_COLORS: [string, string][] = [
-  ['rgba(245,158,11,0.06)', 'transparent'],  // warm
-  ['rgba(59,130,246,0.06)', 'transparent'],   // blue
-  ['rgba(244,114,182,0.06)', 'transparent'],  // pink
-  ['rgba(16,185,129,0.06)', 'transparent'],   // green
+const CARD_ACCENT_COLORS: { gradient: [string, string]; border: string; glow: string }[] = [
+  { gradient: ['rgba(245,158,11,0.12)', 'transparent'], border: 'rgba(245,158,11,0.08)', glow: 'rgba(245,158,11,0.5)' },
+  { gradient: ['rgba(59,130,246,0.12)', 'transparent'], border: 'rgba(59,130,246,0.08)', glow: 'rgba(59,130,246,0.5)' },
+  { gradient: ['rgba(244,114,182,0.12)', 'transparent'], border: 'rgba(244,114,182,0.08)', glow: 'rgba(244,114,182,0.5)' },
+  { gradient: ['rgba(16,185,129,0.12)', 'transparent'], border: 'rgba(16,185,129,0.08)', glow: 'rgba(16,185,129,0.5)' },
 ];
 
 // Avatar gradients matching HomeScreen
@@ -81,7 +81,7 @@ export default function SquadScreen() {
             const solBalance = squad.totalDeposited / 1_000_000_000;
             const memberAvatars = squad.members.slice(0, 4);
             const extraCount = Math.max(0, squad.members.length - 4);
-            const accentColors = CARD_ACCENT_COLORS[idx % CARD_ACCENT_COLORS.length];
+            const accent = CARD_ACCENT_COLORS[idx % CARD_ACCENT_COLORS.length];
 
             return (
               <Animated.View
@@ -91,14 +91,28 @@ export default function SquadScreen() {
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => router.push(`/squad/${squad.id}`)}
-                  style={styles.squadCard}
+                  style={[styles.squadCard, { borderColor: accent.border }]}
                 >
-                  {/* Unique accent tint overlay */}
+                  {/* Glass background */}
                   <LinearGradient
-                    colors={accentColors}
+                    colors={['rgba(25, 25, 50, 0.9)', 'rgba(15, 15, 35, 0.95)']}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                  />
+                  {/* Accent tint overlay */}
+                  <LinearGradient
+                    colors={accent.gradient}
                     style={styles.accentOverlay}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0.8, y: 0.8 }}
+                  />
+                  {/* Top accent glow line */}
+                  <LinearGradient
+                    colors={['transparent', accent.glow, 'transparent']}
+                    style={styles.topAccentLine}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
                   />
 
                   {/* Header row */}
@@ -213,8 +227,11 @@ const styles = StyleSheet.create({
   // Squad Card
   squadCard: {
     padding: SPACING.xl, borderRadius: RADIUS.xl, overflow: 'hidden',
-    position: 'relative', backgroundColor: '#111122',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)',
+    position: 'relative', backgroundColor: 'transparent',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
+  },
+  topAccentLine: {
+    position: 'absolute', top: 0, left: '15%', right: '15%', height: 1.5,
   },
   accentOverlay: {
     ...StyleSheet.absoluteFillObject,

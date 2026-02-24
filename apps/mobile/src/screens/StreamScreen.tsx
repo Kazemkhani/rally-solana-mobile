@@ -133,9 +133,21 @@ function StreamCard({ stream, type, now, index }: { stream: any; type: 'incoming
 
   return (
     <Animated.View entering={FadeInDown.delay(250 + index * 80).duration(400).springify()}>
-      <AnimatedPressable style={styles.streamCard}>
+      <AnimatedPressable style={[styles.streamCard, { borderColor: isIn ? 'rgba(16,185,129,0.08)' : 'rgba(245,158,11,0.08)' }]}>
+        {/* Glass background */}
+        <LinearGradient
+          colors={['rgba(25, 25, 50, 0.9)', 'rgba(15, 15, 35, 0.95)']}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Top accent glow */}
+        <LinearGradient
+          colors={['transparent', isIn ? 'rgba(16,185,129,0.4)' : 'rgba(245,158,11,0.4)', 'transparent']}
+          style={styles.topGlowLine}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+        />
         {/* Pulsing dot */}
-        <Animated.View style={[styles.pulseDot, { backgroundColor: COLORS.success }, dotStyle]} />
+        <Animated.View style={[styles.pulseDot, { backgroundColor: accentColor }, dotStyle]} />
 
         {/* Top row */}
         <View style={styles.streamTop}>
@@ -228,9 +240,12 @@ const styles = StyleSheet.create({
   // Stream Card
   streamCard: {
     padding: SPACING.xl, borderRadius: RADIUS.xl,
-    backgroundColor: '#111122',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'transparent',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)',
     marginBottom: 14, position: 'relative', overflow: 'hidden',
+  },
+  topGlowLine: {
+    position: 'absolute', top: 0, left: '15%', right: '15%', height: 1.5,
   },
   pulseDot: {
     position: 'absolute', top: SPACING.xl, right: SPACING.xl,

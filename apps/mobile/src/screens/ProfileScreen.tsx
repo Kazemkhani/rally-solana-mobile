@@ -1,16 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch,
-  Platform, Modal, Animated, Easing, RefreshControl,
+  Platform, Modal, Animated, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Copy, Lock, Bell, Settings, LogOut, Check, Activity, Users, Flame, ChevronRight } from 'lucide-react-native';
+
 import ScreenWrapper from '../components/ScreenWrapper';
 import AnimatedPressable from '../components/AnimatedPressable';
-import { LinearGradient } from 'expo-linear-gradient';
 import { showToast } from '../components/Toast';
-import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { MOCK_USER } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
+
+const HAIRLINE = StyleSheet.hairlineWidth;
 
 export default function ProfileScreen() {
   const { balance, usdcBalance, skrBalance, disconnect } = useWalletStore();
@@ -20,41 +24,24 @@ export default function ProfileScreen() {
   const [showDisconnect, setShowDisconnect] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Rotating gradient ring
-  const ringRotation = useRef(new Animated.Value(0)).current;
   const entranceAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Slow spin — 20s per revolution
-    Animated.loop(
-      Animated.timing(ringRotation, {
-        toValue: 1,
-        duration: 20000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-
     Animated.timing(entranceAnim, {
       toValue: 1, duration: 400, useNativeDriver: true,
     }).start();
   }, []);
 
-  const spin = ringRotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   const tokenData = [
-    { symbol: 'SOL', name: 'Solana', balance, usdValue: balance * 145, gradient: ['#9945FF', '#6366F1'] as [string, string], icon: '◎' },
-    { symbol: 'USDC', name: 'USD Coin', balance: usdcBalance, usdValue: usdcBalance, gradient: ['#2775CA', '#1a5fb4'] as [string, string], icon: '$' },
-    { symbol: 'SKR', name: 'Seeker', balance: skrBalance, usdValue: skrBalance * 0.20, gradient: ['#F59E0B', '#D97706'] as [string, string], icon: '✦' },
+    { symbol: 'SOL', name: 'Solana', balance, usdValue: balance * 145, color: '#9945FF' },
+    { symbol: 'USDC', name: 'USD Coin', balance: usdcBalance, usdValue: usdcBalance, color: '#2775CA' },
+    { symbol: 'SKR', name: 'Seeker', balance: skrBalance, usdValue: skrBalance * 0.20, color: '#F59E0B' },
   ];
 
   const handleCopy = () => {
     setCopied(true);
-    showToast('Address copied!', 'success');
-    setTimeout(() => setCopied(false), 1500);
+    showToast('Address copied', 'success');
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDisconnect = () => {
@@ -72,170 +59,201 @@ export default function ProfileScreen() {
     setTimeout(() => {
       setRefreshing(false);
       showToast('Profile refreshed', 'success');
-    }, 1000);
+    }, 800);
   };
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper accentStrength={0}>
       <SafeAreaView style={styles.container} edges={['top']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ffffff" />
           }
         >
-          {/* Profile Header */}
+          {/* SOTA Profile Header */}
           <Animated.View style={[styles.profileHeader, {
             opacity: entranceAnim,
-            transform: [{ translateY: entranceAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+            transform: [{ translateY: entranceAnim.interpolate({ inputRange: [0, 1], outputRange: [15, 0] }) }],
           }]}>
-            {/* Rotating gradient ring */}
-            <View style={styles.avatarOuter}>
-              <Animated.View style={[styles.avatarRing, { transform: [{ rotate: spin }] }]}>
-                <View style={styles.ringGradient1} />
-                <View style={styles.ringGradient2} />
-              </Animated.View>
-              <View style={styles.avatarInner}>
-                <Text style={styles.avatarEmoji}>{MOCK_USER.avatar}</Text>
-              </View>
-              <View style={styles.statusDot} />
+            <View style={styles.avatarContainer}>
+              <LinearGradient
+                colors={['#8B5CF6', '#3B82F6', '#10B981']}
+                style={styles.avatarMesh}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              />
+              <View style={styles.avatarBorder} />
             </View>
 
             <Text style={styles.displayName}>{MOCK_USER.displayName}</Text>
 
-            <View style={styles.connectedRow}>
-              <View style={styles.connectedDot} />
-              <Text style={styles.connectedText}>Connected</Text>
-            </View>
-
-            {/* Copyable address pill */}
             <AnimatedPressable
-              scaleDepth={0.95}
+              scaleDepth={0.96}
               onPress={handleCopy}
-              style={[styles.addressPill, copied && styles.addressPillCopied]}
+              style={styles.addressPill}
             >
-              <Text style={[styles.addressText, copied && { color: COLORS.success }]}>
-                {copied ? 'Copied!' : `${MOCK_USER.pubkey.slice(0, 6)}...${MOCK_USER.pubkey.slice(-6)}`}
+              <Text style={styles.addressText}>
+                {MOCK_USER.pubkey.slice(0, 6)}...{MOCK_USER.pubkey.slice(-4)}
               </Text>
-              {!copied && <Text style={styles.copyIcon}>📋</Text>}
+              {copied ? (
+                <Check size={14} color="#10B981" strokeWidth={2.5} />
+              ) : (
+                <Copy size={14} color="#888888" strokeWidth={2} />
+              )}
             </AnimatedPressable>
           </Animated.View>
 
-          {/* Stats — Clean, no boxes */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: COLORS.primary }]}>{MOCK_USER.squads.length}</Text>
-              <Text style={styles.statLabel}>Squads</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: COLORS.streamBlue }]}>24</Text>
-              <Text style={styles.statLabel}>Txns</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: COLORS.warning }]}>{MOCK_USER.streakDays}</Text>
-              <Text style={styles.statLabel}>Streak 🔥</Text>
+          {/* Bento Box Stats */}
+          <View style={styles.bentoContainer}>
+            <View style={styles.bentoRow}>
+              <View style={[styles.bentoCard, { flex: 1.2 }]}>
+                <View style={styles.bentoHeader}>
+                  <Users size={16} color="#888888" />
+                  <Text style={styles.bentoLabel}>Squads</Text>
+                </View>
+                <Text style={styles.bentoValue}>{MOCK_USER.squads.length}</Text>
+              </View>
+
+              <View style={[styles.bentoCard, { flex: 1 }]}>
+                <View style={styles.bentoHeader}>
+                  <Activity size={16} color="#888888" />
+                  <Text style={styles.bentoLabel}>Txns</Text>
+                </View>
+                <Text style={styles.bentoValue}>24</Text>
+              </View>
+
+              <View style={[styles.bentoCard, { flex: 1 }]}>
+                <View style={styles.bentoHeader}>
+                  <Flame size={16} color="#F59E0B" />
+                  <Text style={styles.bentoLabel}>Streak</Text>
+                </View>
+                <Text style={styles.bentoValue}>{MOCK_USER.streakDays}</Text>
+              </View>
             </View>
           </View>
 
-          {/* Assets */}
+          {/* SOTA Vertical Assets List */}
           <Text style={styles.sectionTitle}>Assets</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.assetsScroll}>
-            {tokenData.map((token, i) => (
-              <AnimatedPressable
-                key={token.symbol}
-                scaleDepth={0.95}
-                style={styles.tokenCard}
-              >
-                <LinearGradient
-                  colors={token.gradient}
-                  style={styles.tokenIcon}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Text style={styles.tokenIconText}>{token.icon}</Text>
-                </LinearGradient>
-                <View style={styles.tokenInfo}>
-                  <Text style={styles.tokenName}>{token.name}</Text>
-                  <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+          <View style={styles.listContainer}>
+            {Platform.OS !== 'android' && (
+              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+            )}
+            <View style={styles.listInnerContainer}>
+              {tokenData.map((token, index) => (
+                <View key={token.symbol}>
+                  <AnimatedPressable scaleDepth={0.98} style={styles.assetRow}>
+                    <View style={styles.assetLeft}>
+                      <View style={[styles.assetIconBox, { backgroundColor: `${token.color}20` }]}>
+                        <View style={[styles.assetIconInner, { backgroundColor: token.color }]} />
+                      </View>
+                      <View style={styles.assetTextStack}>
+                        <Text style={styles.assetName}>{token.name}</Text>
+                        <Text style={styles.assetSymbol}>{token.symbol}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.assetRight}>
+                      <Text style={styles.assetBalance}>
+                        {token.balance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                      </Text>
+                      <Text style={styles.assetUsd}>
+                        ${token.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Text>
+                    </View>
+                  </AnimatedPressable>
+                  {index < tokenData.length - 1 && <View style={styles.listDivider} />}
                 </View>
-                <View style={styles.tokenValues}>
-                  <Text style={styles.tokenBalance}>
-                    {token.balance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                  </Text>
-                  <Text style={styles.tokenUsd}>
-                    ${token.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </Text>
+              ))}
+            </View>
+          </View>
+
+          {/* SOTA Settings List */}
+          <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Settings</Text>
+          <View style={styles.listContainer}>
+            {Platform.OS !== 'android' && (
+              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+            )}
+            <View style={styles.listInnerContainer}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconWrap}>
+                    <Lock size={18} color="#ffffff" strokeWidth={2} />
+                  </View>
+                  <Text style={styles.settingLabel}>Biometric Lock</Text>
+                </View>
+                <Switch
+                  value={biometrics}
+                  onValueChange={setBiometrics}
+                  trackColor={{ false: '#222222', true: '#ffffff' }}
+                  thumbColor={biometrics ? '#000000' : '#888888'}
+                  ios_backgroundColor="#222222"
+                />
+              </View>
+              <View style={styles.listDivider} />
+
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconWrap}>
+                    <Bell size={18} color="#ffffff" strokeWidth={2} />
+                  </View>
+                  <Text style={styles.settingLabel}>Notifications</Text>
+                </View>
+                <Switch
+                  value={notifications}
+                  onValueChange={setNotifications}
+                  trackColor={{ false: '#222222', true: '#ffffff' }}
+                  thumbColor={notifications ? '#000000' : '#888888'}
+                  ios_backgroundColor="#222222"
+                />
+              </View>
+              <View style={styles.listDivider} />
+
+              <AnimatedPressable scaleDepth={0.98} style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconWrap}>
+                    <Settings color="#ffffff" size={18} strokeWidth={2} />
+                  </View>
+                  <Text style={styles.settingLabel}>Network</Text>
+                </View>
+                <View style={styles.settingRightBadge}>
+                  <Text style={styles.settingRightBadgeText}>Devnet</Text>
+                  <ChevronRight size={16} color="#555555" />
                 </View>
               </AnimatedPressable>
-            ))}
-          </ScrollView>
+              <View style={styles.listDivider} />
 
-          {/* Settings — Grouped Card */}
-          <Text style={[styles.sectionTitle, { marginTop: SPACING.xxxl }]}>Settings</Text>
-          <View style={styles.settingsCard}>
-            <View style={styles.settingRow}>
-              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
-                <Text style={styles.settingIcon}>🔐</Text>
-              </View>
-              <Text style={styles.settingLabel}>Biometric Lock</Text>
-              <Switch
-                value={biometrics}
-                onValueChange={(v) => { setBiometrics(v); showToast(v ? 'Biometric lock enabled' : 'Biometric lock disabled', 'info'); }}
-                trackColor={{ false: '#1A1A35', true: 'rgba(139,92,246,0.4)' }}
-                thumbColor={biometrics ? COLORS.primary : '#4B5563'}
-              />
+              <AnimatedPressable scaleDepth={0.98} style={styles.settingRow} onPress={handleDisconnect}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+                    <LogOut color="#EF4444" size={18} strokeWidth={2} />
+                  </View>
+                  <Text style={[styles.settingLabel, { color: '#EF4444' }]}>Disconnect Wallet</Text>
+                </View>
+              </AnimatedPressable>
             </View>
-            <View style={styles.settingDivider} />
-            <View style={styles.settingRow}>
-              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
-                <Text style={styles.settingIcon}>🔔</Text>
-              </View>
-              <Text style={styles.settingLabel}>Notifications</Text>
-              <Switch
-                value={notifications}
-                onValueChange={(v) => { setNotifications(v); showToast(v ? 'Notifications enabled' : 'Notifications disabled', 'info'); }}
-                trackColor={{ false: '#1A1A35', true: 'rgba(139,92,246,0.4)' }}
-                thumbColor={notifications ? COLORS.primary : '#4B5563'}
-              />
-            </View>
-            <View style={styles.settingDivider} />
-            <AnimatedPressable scaleDepth={0.99} opacityDepth={0.9} style={styles.settingRow}>
-              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                <Text style={styles.settingIcon}>⚙️</Text>
-              </View>
-              <Text style={styles.settingLabel}>Network</Text>
-              <View style={styles.devnetBadge}>
-                <Text style={styles.devnetText}>Devnet</Text>
-              </View>
-            </AnimatedPressable>
-            <View style={styles.settingDivider} />
-            <AnimatedPressable scaleDepth={0.99} opacityDepth={0.9} style={styles.settingRow} onPress={handleDisconnect}>
-              <View style={[styles.settingIconWrap, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-                <Text style={styles.settingIcon}>🚪</Text>
-              </View>
-              <Text style={[styles.settingLabel, { color: COLORS.danger }]}>Disconnect Wallet</Text>
-            </AnimatedPressable>
           </View>
 
-          <Text style={styles.versionText}>Rally v0.1.0 · Powered by Solana</Text>
+          <Text style={styles.versionText}>Rally v0.1.0</Text>
         </ScrollView>
 
-        {/* Custom Disconnect Modal */}
         <Modal visible={showDisconnect} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalEmoji}>⚠️</Text>
-              <Text style={styles.modalTitle}>Disconnect Wallet?</Text>
-              <Text style={styles.modalSub}>You will need to reconnect to access your funds</Text>
-              <TouchableOpacity style={styles.modalDanger} onPress={confirmDisconnect}>
-                <Text style={styles.modalDangerText}>Disconnect</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowDisconnect(false)}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={styles.modalIconWrap}>
+                <LogOut size={24} color="#EF4444" strokeWidth={2} />
+              </View>
+              <Text style={styles.modalTitle}>Disconnect Wallet</Text>
+              <Text style={styles.modalSub}>Are you sure you want to disconnect? You will need to sign in again.</Text>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalCancel} onPress={() => setShowDisconnect(false)}>
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalDanger} onPress={confirmDisconnect}>
+                  <Text style={styles.modalDangerText}>Disconnect</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
@@ -245,281 +263,294 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#0a0a0a' },
   scrollContent: {
     paddingBottom: Platform.OS === 'ios' ? 120 : 100,
   },
-  // Profile Header
+
+  // Profile Header (SOTA)
   profileHeader: {
     alignItems: 'center',
-    paddingTop: SPACING.xxl,
-    paddingBottom: SPACING.xl,
+    paddingTop: 32,
+    paddingBottom: 24,
   },
-  avatarOuter: {
-    width: 108,
-    height: 108,
-    alignItems: 'center',
-    justifyContent: 'center',
+  avatarContainer: {
+    width: 80,
+    height: 80,
     position: 'relative',
-    marginBottom: SPACING.lg,
+    marginBottom: 16,
   },
-  avatarRing: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 54,
-    overflow: 'hidden',
+  avatarMesh: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
   },
-  ringGradient1: {
+  avatarBorder: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: '50%',
-    borderTopWidth: 2.5,
-    borderLeftWidth: 2.5,
-    borderRightWidth: 2.5,
-    borderTopColor: '#8B5CF6',
-    borderLeftColor: '#6366F1',
-    borderRightColor: '#3B82F6',
-    borderColor: 'transparent',
-    borderTopLeftRadius: 54,
-    borderTopRightRadius: 54,
-  },
-  ringGradient2: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderBottomWidth: 2.5,
-    borderLeftWidth: 2.5,
-    borderRightWidth: 2.5,
-    borderBottomColor: '#3B82F6',
-    borderLeftColor: '#8B5CF6',
-    borderRightColor: '#6366F1',
-    borderColor: 'transparent',
-    borderBottomLeftRadius: 54,
-    borderBottomRightRadius: 54,
-  },
-  avatarInner: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#111122',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarEmoji: { fontSize: 44 },
-  statusDot: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: COLORS.success,
-    borderWidth: 2.5,
-    borderColor: '#06060E',
+    top: -2, left: -2, right: -2, bottom: -2,
+    borderRadius: 42,
+    borderWidth: HAIRLINE,
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   displayName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.text,
-    marginBottom: 4,
-  },
-  connectedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: SPACING.md,
-  },
-  connectedDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.success,
-  },
-  connectedText: {
-    fontSize: 12,
-    color: COLORS.success,
-    fontWeight: '500',
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#ffffff',
+    letterSpacing: -0.5,
+    marginBottom: 12,
   },
   addressPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
+    gap: 8,
+    backgroundColor: '#111111',
+    borderWidth: HAIRLINE,
+    borderColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: RADIUS.full,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  addressPillCopied: {
-    backgroundColor: 'rgba(16,185,129,0.08)',
+    borderRadius: 20,
   },
   addressText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 13,
+    color: '#888888',
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
   },
-  copyIcon: { fontSize: 12 },
-  // Stats
-  statsRow: {
+
+  // Bento Box
+  bentoContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  bentoRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bentoCard: {
+    backgroundColor: '#111111',
+    borderWidth: HAIRLINE,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
+    padding: 16,
+  },
+  bentoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.xl,
-    marginHorizontal: SPACING.xxxl,
-    marginBottom: SPACING.xl,
+    gap: 6,
+    marginBottom: 8,
   },
-  statItem: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  statLabel: { fontSize: 11, color: '#4B5563', marginTop: 2, fontWeight: '500' },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+  bentoLabel: {
+    fontSize: 12,
+    color: '#888888',
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
-  // Assets
+  bentoValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#ffffff',
+    letterSpacing: -0.5,
+  },
+
+  // Lists (Assets & Settings)
   sectionTitle: {
-    fontSize: FONT_SIZES.section,
-    fontWeight: '700',
-    color: COLORS.text,
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.lg,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666666',
+    letterSpacing: -0.2,
+    paddingHorizontal: 24,
+    marginBottom: 12,
   },
-  assetsScroll: {
-    paddingHorizontal: SPACING.xl,
-    gap: SPACING.md,
+  listContainer: {
+    marginHorizontal: 20,
+    borderRadius: 16,
+    backgroundColor: Platform.OS === 'android' ? '#111111' : 'rgba(17, 17, 17, 0.4)',
+    borderWidth: HAIRLINE,
+    borderColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
   },
-  tokenCard: {
-    width: 140,
-    padding: SPACING.lg,
-    borderRadius: RADIUS.xl,
-    backgroundColor: 'rgba(17, 17, 34, 0.6)',
-    borderWidth: 1,
-    borderTopWidth: 1.5,
-    borderLeftWidth: 1.5,
-    borderColor: 'rgba(139, 92, 246, 0.08)',
-    alignItems: 'flex-start',
+  listInnerContainer: {
+    paddingVertical: 4,
   },
-  tokenIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  listDivider: {
+    height: HAIRLINE,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginHorizontal: 16,
+  },
+
+  // Asset Item
+  assetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  assetLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  assetIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.md,
   },
-  tokenIconText: { fontSize: 20, fontWeight: '700', color: '#FFFFFF' },
-  tokenInfo: { marginBottom: SPACING.sm },
-  tokenName: { fontSize: FONT_SIZES.md, fontWeight: '600', color: COLORS.text, marginBottom: 2 },
-  tokenSymbol: { fontSize: 13, color: '#6B7280' },
-  tokenValues: { width: '100%' },
-  tokenBalance: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '800',
-    color: COLORS.text,
-    fontVariant: ['tabular-nums'],
-    marginBottom: 2,
+  assetIconInner: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
   },
-  tokenUsd: {
+  assetTextStack: {
+    gap: 2,
+  },
+  assetName: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#ffffff',
+    letterSpacing: -0.3,
+  },
+  assetSymbol: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#888888',
+    letterSpacing: -0.2,
+  },
+  assetRight: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  assetBalance: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#ffffff',
+    letterSpacing: -0.3,
+  },
+  assetUsd: {
+    fontSize: 13,
+    color: '#888888',
     fontVariant: ['tabular-nums'],
   },
-  // Settings
-  settingsCard: {
-    marginHorizontal: SPACING.xl,
-    borderRadius: RADIUS.xl,
-    backgroundColor: 'rgba(17, 17, 34, 0.6)',
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.08)',
-    overflow: 'hidden',
-    ...Platform.select({
-      web: { backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' } as any,
-      default: {},
-    }),
-  },
+
+  // Setting Item
   settingRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
-    gap: SPACING.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   settingIconWrap: {
     width: 32,
     height: 32,
-    borderRadius: RADIUS.md,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  settingIcon: { fontSize: 16 },
-  settingLabel: { flex: 1, fontSize: FONT_SIZES.lg, color: COLORS.text },
-  settingValue: { fontSize: FONT_SIZES.md, color: '#6B7280' },
-  devnetBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    borderRadius: RADIUS.sm,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+  settingLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#ffffff',
+    letterSpacing: -0.3,
   },
-  devnetText: { fontSize: 11, fontWeight: '600', color: COLORS.warning },
-  settingDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    marginHorizontal: SPACING.xl,
-  },
-  disconnectBtn: {
+  settingRightBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.xl,
-    marginTop: SPACING.xxxl,
+    gap: 4,
   },
-  disconnectText: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
-    color: COLORS.danger,
+  settingRightBadgeText: {
+    fontSize: 14,
+    color: '#888888',
   },
-  // Custom Disconnect Modal
+
+  versionText: {
+    fontSize: 12,
+    color: '#444444',
+    textAlign: 'center',
+    marginTop: 32,
+    fontWeight: '500',
+    letterSpacing: -0.2,
+  },
+
+  // Modal (SOTA style)
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: SPACING.xxxl,
+    padding: 24,
+    ...Platform.select({
+      web: { backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' } as any,
+    }),
   },
   modalContent: {
-    backgroundColor: '#111122',
-    borderRadius: RADIUS.xl,
-    padding: SPACING.xxl,
+    backgroundColor: '#111111',
+    borderRadius: 24,
+    padding: 24,
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 340,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.12)',
+    borderWidth: HAIRLINE,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
-  modalEmoji: { fontSize: 36, marginBottom: SPACING.lg },
+  modalIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
   modalTitle: {
-    fontSize: FONT_SIZES.xxl, fontWeight: '700',
-    color: COLORS.text, marginBottom: SPACING.sm, textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#ffffff',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   modalSub: {
-    fontSize: FONT_SIZES.md, color: COLORS.textSecondary,
-    textAlign: 'center', marginBottom: SPACING.xxl, lineHeight: 20,
+    fontSize: 14,
+    color: '#888888',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
   },
-  modalDanger: {
-    width: '100%', paddingVertical: SPACING.md,
-    borderRadius: RADIUS.lg, backgroundColor: 'rgba(239,68,68,0.12)',
-    alignItems: 'center', marginBottom: SPACING.md,
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
   },
-  modalDangerText: { fontSize: FONT_SIZES.lg, fontWeight: '600', color: COLORS.danger },
   modalCancel: {
-    width: '100%', paddingVertical: SPACING.md,
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#222222',
     alignItems: 'center',
   },
-  modalCancelText: { fontSize: FONT_SIZES.md, color: COLORS.textSecondary },
-  versionText: {
-    fontSize: 11,
-    color: '#4B5563',
-    textAlign: 'center',
-    marginTop: SPACING.lg,
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#ffffff',
+  },
+  modalDanger: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+  },
+  modalDangerText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#ffffff',
   },
 });

@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { COLORS, SPACING, FONT_SIZES } from '../utils/constants';
 
 interface Props {
-    icon: string;
+    icon: string | React.ReactNode;
     title: string;
     subtitle: string;
 }
@@ -15,7 +15,11 @@ export default function EmptyState({ icon, title, subtitle }: Props) {
             entering={FadeInDown.delay(200).duration(500).springify()}
             style={styles.container}
         >
-            <Text style={styles.icon}>{icon}</Text>
+            {typeof icon === 'string' ? (
+                <Text style={styles.icon}>{icon}</Text>
+            ) : (
+                <View style={styles.iconWrap}>{icon}</View>
+            )}
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.subtitle}>{subtitle}</Text>
         </Animated.View>
@@ -30,6 +34,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.xxxl,
     },
     icon: { fontSize: 48, marginBottom: SPACING.lg },
+    iconWrap: { marginBottom: SPACING.lg },
     title: {
         fontSize: FONT_SIZES.xxl, fontWeight: '700',
         color: COLORS.text, textAlign: 'center', marginBottom: SPACING.sm,

@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { Bell, ArrowDownLeft, ArrowUpRight, Plus, Scissors, Waves, Users } from 'lucide-react-native';
 import ScreenWrapper from '../components/ScreenWrapper';
 import BalanceDisplay from '../components/BalanceDisplay';
 import AnimatedPressable from '../components/AnimatedPressable';
@@ -126,7 +127,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <View style={styles.bellContainer}>
-              <Text style={styles.bellIcon}>🔔</Text>
+              <Bell size={20} color="#ffffff" strokeWidth={2} />
               <View style={styles.bellDot} />
             </View>
           </Animated.View>
@@ -156,7 +157,7 @@ export default function HomeScreen() {
                   }
                 }}
               >
-                <Text style={styles.actionPillIcon}>↙</Text>
+                <ArrowDownLeft size={16} color="#888888" strokeWidth={2.5} />
                 <Text style={styles.actionPillLabel}>Receive</Text>
               </AnimatedPressable>
 
@@ -171,7 +172,7 @@ export default function HomeScreen() {
                 }}
               >
                 <Text style={styles.actionPillLabel}>Send</Text>
-                <Text style={styles.actionPillIcon}>↗</Text>
+                <ArrowUpRight size={16} color="#888888" strokeWidth={2.5} />
               </AnimatedPressable>
             </View>
 
@@ -192,7 +193,7 @@ export default function HomeScreen() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={styles.actionPillCenterIcon}>+</Text>
+                <Plus size={28} color="#04040a" strokeWidth={2.5} />
               </LinearGradient>
             </AnimatedPressable>
           </Animated.View>
@@ -203,9 +204,9 @@ export default function HomeScreen() {
             style={styles.quickRow}
           >
             {[
-              { label: 'Split', icon: '✂', route: '/pay' },
-              { label: 'Stream', icon: '≋', route: '/streams' },
-              { label: 'Squads', icon: '◆', route: '/squads' },
+              { label: 'Split', icon: <Scissors size={14} color="#8B5CF6" />, route: '/pay' },
+              { label: 'Stream', icon: <Waves size={14} color="#3B82F6" />, route: '/streams' },
+              { label: 'Squads', icon: <Users size={14} color="#10B981" />, route: '/squads' },
             ].map((item) => (
               <AnimatedPressable
                 key={item.label}
@@ -213,7 +214,7 @@ export default function HomeScreen() {
                 style={styles.quickChip}
                 onPress={() => router.push(item.route as any)}
               >
-                <Text style={styles.quickChipIcon}>{item.icon}</Text>
+                <View style={styles.quickChipIconWrap}>{item.icon}</View>
                 <Text style={styles.quickChipLabel}>{item.label}</Text>
               </AnimatedPressable>
             ))}
@@ -239,7 +240,7 @@ export default function HomeScreen() {
             </View>
           ) : MOCK_TRANSACTIONS.length === 0 ? (
             <EmptyState
-              icon="📭"
+              icon={<Users size={40} color="#888888" />}
               title="No transactions yet"
               subtitle="Send, split, or stream SOL to see your activity here"
             />
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
   bellContainer: { position: 'relative' },
   bellIcon: { fontSize: 22 },
   bellDot: {
-    position: 'absolute', top: 0, right: 0,
+    position: 'absolute', top: -2, right: -2,
     width: 8, height: 8, borderRadius: 4,
     backgroundColor: COLORS.danger,
     borderWidth: 1.5, borderColor: '#06060E',
@@ -425,8 +426,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
   },
-  quickChipIcon: {
-    fontSize: 13, color: COLORS.primary,
+  quickChipIconWrap: {
+    alignItems: 'center', justifyContent: 'center',
   },
   quickChipLabel: {
     fontSize: 13, fontWeight: '500', color: COLORS.textSecondary,

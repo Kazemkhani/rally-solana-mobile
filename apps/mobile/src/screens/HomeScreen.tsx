@@ -149,7 +149,11 @@ export default function HomeScreen() {
               <AnimatedPressable
                 scaleDepth={0.95}
                 style={styles.actionPillLeft}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                onPress={() => {
+                  if (Platform.OS !== 'web') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+                  }
+                }}
               >
                 <Text style={styles.actionPillIcon}>↙</Text>
                 <Text style={styles.actionPillLabel}>Receive</Text>
@@ -158,7 +162,12 @@ export default function HomeScreen() {
               <AnimatedPressable
                 scaleDepth={0.95}
                 style={styles.actionPillRight}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/pay'); }}
+                onPress={() => {
+                  if (Platform.OS !== 'web') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+                  }
+                  router.push('/pay');
+                }}
               >
                 <Text style={styles.actionPillLabel}>Send</Text>
                 <Text style={styles.actionPillIcon}>↗</Text>
@@ -169,7 +178,12 @@ export default function HomeScreen() {
             <AnimatedPressable
               scaleDepth={0.9}
               style={styles.actionPillCenterWrap}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/pay'); }}
+              onPress={() => {
+                if (Platform.OS !== 'web') {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => { });
+                }
+                router.push('/pay');
+              }}
             >
               <LinearGradient
                 colors={['#f0f0f5', '#d2a8ff', '#b175ff']}

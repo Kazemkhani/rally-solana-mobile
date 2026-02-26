@@ -13,11 +13,20 @@ import AnimatedPressable from '../components/AnimatedPressable';
 import { showToast } from '../components/Toast';
 import { MOCK_USER } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
+import { useAuthStore } from '../stores/auth';
+import { useSquadStore } from '../stores/squads';
 
 const HAIRLINE = StyleSheet.hairlineWidth;
 
 export default function ProfileScreen() {
-  const { balance, usdcBalance, skrBalance, disconnect } = useWalletStore();
+  const { balance, usdcBalance, skrBalance, disconnect, publicKey } = useWalletStore();
+  const { user, loadProfile } = useAuthStore();
+  const { squads } = useSquadStore();
+
+  // Use auth user data if available, fall back to mock
+  const displayName = user?.displayName || MOCK_USER.displayName;
+  const displayPubkey = publicKey || MOCK_USER.pubkey;
+  const squadCount = squads.length || MOCK_USER.squads.length;
   const [biometrics, setBiometrics] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -54,12 +63,11 @@ export default function ProfileScreen() {
     showToast('Wallet disconnected', 'info');
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-      showToast('Profile refreshed', 'success');
-    }, 800);
+    await loadProfile();
+    setRefreshing(false);
+    showToast('Profile refreshed', 'success');
   };
 
   return (
@@ -87,7 +95,7 @@ export default function ProfileScreen() {
               <View style={styles.avatarBorder} />
             </View>
 
-            <Text style={styles.displayName}>{MOCK_USER.displayName}</Text>
+            <Text style={styles.displayName}>{displayName}</Text>
 
             <AnimatedPressable
               scaleDepth={0.96}
@@ -95,7 +103,7 @@ export default function ProfileScreen() {
               style={styles.addressPill}
             >
               <Text style={styles.addressText}>
-                {MOCK_USER.pubkey.slice(0, 6)}...{MOCK_USER.pubkey.slice(-4)}
+                {displayPubkey.slice(0, 6)}...{displayPubkey.slice(-4)}
               </Text>
               {copied ? (
                 <Check size={14} color="#10B981" strokeWidth={2.5} />
@@ -113,7 +121,7 @@ export default function ProfileScreen() {
                   <Users size={16} color="#888888" />
                   <Text style={styles.bentoLabel}>Squads</Text>
                 </View>
-                <Text style={styles.bentoValue}>{MOCK_USER.squads.length}</Text>
+                <Text style={styles.bentoValue}>{squadCount}</Text>
               </View>
 
               <View style={[styles.bentoCard, { flex: 1 }]}>
@@ -129,7 +137,7 @@ export default function ProfileScreen() {
                   <Flame size={16} color="#F59E0B" />
                   <Text style={styles.bentoLabel}>Streak</Text>
                 </View>
-                <Text style={styles.bentoValue}>{MOCK_USER.streakDays}</Text>
+                <Text style={styles.bentoValue}>12</Text>
               </View>
             </View>
           </View>

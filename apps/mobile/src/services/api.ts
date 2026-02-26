@@ -1,5 +1,70 @@
 import { API_URL } from '../utils/constants';
+import type { Squad, Transaction, PaymentStream, UserProfile } from '../types';
 
+// ─── API RESPONSE TYPES ───────────────────────────────────────
+export interface ApiUser {
+  id: string;
+  pubkey: string;
+  displayName: string;
+  avatar: string | null;
+  fcmToken: string | null;
+  createdAt: string;
+  updatedAt: string;
+  squads?: Array<{ squad: ApiSquad }>;
+}
+
+export interface ApiSquad {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string | null;
+  avatar: string | null;
+  onchainAddress: string;
+  createdAt: string;
+  members: ApiSquadMembership[];
+  transactions?: ApiTransaction[];
+}
+
+export interface ApiSquadMembership {
+  id: string;
+  userId: string;
+  squadId: string;
+  role: string;
+  joinedAt: string;
+}
+
+export interface ApiTransaction {
+  id: string;
+  type: string;
+  amount: string; // Decimal comes as string from Prisma
+  currency: string;
+  fromPubkey: string;
+  toPubkey: string;
+  squadId: string | null;
+  txSignature: string;
+  memo: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface ApiPaymentStream {
+  id: string;
+  onchainAddress: string;
+  senderPubkey: string;
+  recipientPubkey: string;
+  amountPerSecond: number;
+  startTime: string;
+  endTime: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface RegisterResponse {
+  user: ApiUser;
+  token: string;
+}
+
+// ─── API CLIENT ───────────────────────────────────────────────
 class ApiService {
   private baseUrl: string;
   private authToken: string | null = null;
@@ -14,6 +79,10 @@ class ApiService {
 
   clearAuthToken() {
     this.authToken = null;
+  }
+
+  getAuthToken(): string | null {
+    return this.authToken;
   }
 
   private async request<T>(
@@ -36,66 +105,90 @@ class ApiService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      throw new Error(error.message || error.error || `HTTP ${response.status}`);
     }
 
     return response.json();
   }
 
-  // Users
-  async registerUser(pubkey: string, displayName: string, fcmToken?: string) {
-    return this.request('/api/users/register', {
+  // ─── Users ─────────────────────────────────────────────────
+  async registerUser(pubkey: string, displayName: string, fcmToken?: string): Promise<RegisterResponse> {
+    return this.request<RegisterResponse>('/api/users/register', {
       method: 'POST',
       body: JSON.stringify({ pubkey, displayName, fcmToken }),
     });
   }
 
-  async getProfile() {
-    return this.request('/api/users/me');
+  async getProfile(): Promise<{ user: ApiUser }> {
+    return this.request<{ user: ApiUser }>('/api/users/me');
   }
 
-  // Squads
-  async getSquads() {
-    return this.request<{ squads: any[] }>('/api/squads');
-  }
-
-  async createSquad(name: string, members: string[]) {
-    return this.request('/api/squads', {
-      method: 'POST',
-      body: JSON.stringify({ name, members }),
+  async updateProfile(data: { displayName?: string; avatar?: string }): Promise<{ user: ApiUser }> {
+    return this.request<{ user: ApiUser }>('/api/users/me', {
+      method: 'PUT',
+      body: JSON.stringify(data),
     });
   }
 
-  async getSquadDetails(squadId: string) {
-    return this.request(`/api/squads/${squadId}`);
+  async getTransactions(): Promise<{ transactions: ApiTransaction[] }> {
+    return this.request<{ transactions: ApiTransaction[] }>('/api/users/me/transactions');
   }
 
-  async getSquadTransactions(squadId: string) {
-    return this.request(`/api/squads/${squadId}/transactions`);
+  async getPublicProfile(pubkey: string): Promise<{ user: Pick<ApiUser, 'pubkey' | 'displayName' | 'avatar' | 'createdAt'> }> {
+    return this.request('/api/users/' + pubkey);
   }
 
-  // Payments
-  async logPayment(data: {
+  // ─── Squads ────────────────────────────────────────────────
+  async getSquads(): Promise<{ squads: ApiSquad[] }> {
+    return this.request<{ squads: ApiSquad[] }>('/api/squads');
+  }
+
+  async createSquad(name: string, emoji: string, members: string[], description?: string): Promise<ApiSquad> {
+    return this.request<ApiSquad>('/api/squads', {
+      method: 'POST',
+      body: JSON.stringify({ name, emoji, members, description }),
+    });
+  }
+
+  async getSquadDetails(squadId: string): Promise<ApiSquad> {
+    return this.request<ApiSquad>('/api/squads/' + squadId);
+  }
+
+  async getSquadTransactions(squadId: string): Promise<{ transactions: ApiTransaction[] }> {
+    return this.request<{ transactions: ApiTransaction[] }>('/api/squads/' + squadId + '/transactions');
+  }
+
+  async logSquadTransaction(squadId: string, data: {
     type: string;
     amount: number;
-    currency: string;
-    fromPubkey: string;
-    toPubkey: string;
+    currency?: string;
     txSignature: string;
     memo?: string;
-    squadId?: string;
-  }) {
-    return this.request('/api/payments/send', {
+  }): Promise<ApiTransaction> {
+    return this.request<ApiTransaction>('/api/squads/' + squadId + '/transactions', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  // Splits
+  // ─── Payments ──────────────────────────────────────────────
+  async logPayment(data: {
+    amount: number;
+    currency?: string;
+    toPubkey: string;
+    txSignature: string;
+    memo?: string;
+  }): Promise<ApiTransaction> {
+    return this.request<ApiTransaction>('/api/payments/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async createSplit(data: {
     description: string;
     totalAmount: number;
-    currency: string;
+    currency?: string;
     squadId?: string;
     splits: { userPubkey: string; amount: number }[];
   }) {
@@ -106,35 +199,47 @@ class ApiService {
   }
 
   async getPendingSplits() {
-    return this.request('/api/payments/splits');
+    return this.request<{ splits: any[] }>('/api/payments/splits');
   }
 
   async settleSplit(splitId: string, txSignature: string) {
-    return this.request(`/api/payments/splits/${splitId}/settle`, {
+    return this.request('/api/payments/splits/' + splitId + '/settle', {
       method: 'POST',
       body: JSON.stringify({ txSignature }),
     });
   }
 
-  // Streams
-  async getStreams() {
-    return this.request('/api/streams');
+  // ─── Streams ───────────────────────────────────────────────
+  async getStreams(): Promise<{ streams: ApiPaymentStream[] }> {
+    return this.request<{ streams: ApiPaymentStream[] }>('/api/streams');
   }
 
-  async logStreamCreation(data: {
+  async createStream(data: {
     onchainAddress: string;
     recipientPubkey: string;
     amountPerSecond: number;
     startTime: number;
     endTime: number;
-  }) {
-    return this.request('/api/streams', {
+  }): Promise<ApiPaymentStream> {
+    return this.request<ApiPaymentStream>('/api/streams', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  // Notifications
+  async cancelStream(streamId: string): Promise<ApiPaymentStream> {
+    return this.request<ApiPaymentStream>('/api/streams/' + streamId + '/cancel', {
+      method: 'POST',
+    });
+  }
+
+  async withdrawFromStream(streamId: string) {
+    return this.request('/api/streams/' + streamId + '/withdraw', {
+      method: 'POST',
+    });
+  }
+
+  // ─── Notifications ─────────────────────────────────────────
   async registerFCMToken(token: string) {
     return this.request('/api/notifications/register', {
       method: 'POST',
@@ -143,7 +248,14 @@ class ApiService {
   }
 
   async getNotificationPreferences() {
-    return this.request('/api/notifications/preferences');
+    return this.request<{
+      id: string;
+      userId: string;
+      payments: boolean;
+      votes: boolean;
+      streams: boolean;
+      splits: boolean;
+    }>('/api/notifications/preferences');
   }
 
   async updateNotificationPreferences(prefs: {
@@ -156,6 +268,11 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(prefs),
     });
+  }
+
+  // ─── Health ────────────────────────────────────────────────
+  async healthCheck(): Promise<{ status: string }> {
+    return this.request<{ status: string }>('/api/health');
   }
 }
 

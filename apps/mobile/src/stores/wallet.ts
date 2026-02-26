@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { api } from '../services/api';
+import { useAuthStore } from './auth';
 
 interface WalletState {
   publicKey: string | null;
@@ -14,6 +16,7 @@ interface WalletState {
   setUsdcBalance: (balance: number) => void;
   setSkrBalance: (balance: number) => void;
   disconnect: () => void;
+  onWalletConnected: (pubkey: string, displayName?: string) => Promise<void>;
 }
 
 export const useWalletStore = create<WalletState>((set) => ({
@@ -32,7 +35,8 @@ export const useWalletStore = create<WalletState>((set) => ({
   setUsdcBalance: (usdcBalance) => set({ usdcBalance }),
   setSkrBalance: (skrBalance) => set({ skrBalance }),
 
-  disconnect: () =>
+  disconnect: () => {
+    useAuthStore.getState().logout();
     set({
       publicKey: null,
       connected: false,
@@ -40,5 +44,19 @@ export const useWalletStore = create<WalletState>((set) => ({
       balance: 0,
       usdcBalance: 0,
       skrBalance: 0,
-    }),
+    });
+  },
+
+  onWalletConnected: async (pubkey: string, displayName?: string) => {
+    set({ publicKey: pubkey, connected: true, connecting: false });
+
+    // Register with backend (or use pubkey as token in hackathon mode)
+    try {
+      await useAuthStore.getState().register(pubkey, displayName || 'Rally User');
+    } catch (error) {
+      // Fallback: set pubkey as auth token directly
+      api.setAuthToken(pubkey);
+      console.log('Auth registration fallback, using pubkey as token');
+    }
+  },
 }));

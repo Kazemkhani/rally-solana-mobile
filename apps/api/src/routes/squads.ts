@@ -9,6 +9,7 @@ router.use(authMiddleware);
 
 const createSquadSchema = z.object({
   name: z.string().min(1).max(32),
+  emoji: z.string().max(4).default('🏠'),
   members: z.array(z.string().min(32).max(44)).max(10),
   description: z.string().max(256).optional(),
 });
@@ -16,11 +17,12 @@ const createSquadSchema = z.object({
 // POST / — Create squad
 router.post('/', validate(createSquadSchema), async (req: AuthRequest, res) => {
   try {
-    const { name, members, description } = req.body;
+    const { name, emoji, members, description } = req.body;
 
     const squad = await prisma.squad.create({
       data: {
         name,
+        emoji,
         description,
         onchainAddress: '', // Set after on-chain creation
         members: {

@@ -53,6 +53,45 @@ router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
   }
 });
 
+// GET /me/transactions — Get user's recent transactions
+router.get('/me/transactions', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        OR: [
+          { fromPubkey: req.userPubkey! },
+          { toPubkey: req.userPubkey! },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    res.json({ transactions });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
+// PUT /me — Update user profile
+router.put('/me', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const { displayName, avatar } = req.body;
+    const data: Record<string, string> = {};
+    if (displayName) data.displayName = displayName;
+    if (avatar) data.avatar = avatar;
+
+    const user = await prisma.user.update({
+      where: { pubkey: req.userPubkey! },
+      data,
+    });
+
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
 // GET /:pubkey — Get public profile
 router.get('/:pubkey', async (req, res) => {
   try {

@@ -109,7 +109,7 @@ router.post('/splits/:id/settle', validate(settleSchema), async (req: AuthReques
   try {
     const splitItem = await prisma.splitItem.updateMany({
       where: {
-        splitId: req.params.id,
+        splitId: req.params.id as string,
         userPubkey: req.userPubkey!,
       },
       data: {
@@ -120,12 +120,12 @@ router.post('/splits/:id/settle', validate(settleSchema), async (req: AuthReques
 
     // Check if all items are settled
     const remaining = await prisma.splitItem.count({
-      where: { splitId: req.params.id, settled: false },
+      where: { splitId: req.params.id as string, settled: false },
     });
 
     if (remaining === 0) {
       await prisma.expenseSplit.update({
-        where: { id: req.params.id },
+        where: { id: req.params.id as string },
         data: { status: 'SETTLED' },
       });
     }

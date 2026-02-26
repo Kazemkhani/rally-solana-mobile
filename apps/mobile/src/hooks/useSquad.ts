@@ -3,54 +3,26 @@ import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana
 import { transact } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import { useSolana } from './useSolana';
 import { useSquadStore } from '../stores/squads';
-import { SOLANA_CLUSTER, API_URL } from '../utils/constants';
-import type { Squad } from '../types';
+import { SOLANA_CLUSTER } from '../utils/constants';
+import { api } from '../services/api';
 
 export function useSquad() {
   const { connection, publicKey } = useSolana();
-  const { squads, activeSquad, setSquads, setActiveSquad, setLoading } =
+  const { squads, activeSquadId, setActiveSquad, fetchSquads: storeFetchSquads } =
     useSquadStore();
 
+  const activeSquad = squads.find((s) => s.id === activeSquadId) || null;
+
   const fetchSquads = useCallback(async () => {
-    if (!publicKey) return;
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/api/squads`, {
-        headers: {
-          Authorization: `Bearer ${publicKey.toBase58()}`,
-        },
-      });
-      const data = await response.json();
-      setSquads(data.squads);
-    } catch (error) {
-      console.error('Failed to fetch squads:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [publicKey, setSquads, setLoading]);
+    await storeFetchSquads();
+  }, [storeFetchSquads]);
 
   const createSquad = useCallback(
-    async (name: string, memberPubkeys: string[]) => {
+    async (name: string, memberPubkeys: string[], emoji = '🏠') => {
       if (!publicKey) throw new Error('Wallet not connected');
-
-      // Create squad on-chain via the rally-squad program
-      // For hackathon: simplified — create via API which triggers program
-      const response = await fetch(`${API_URL}/api/squads`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicKey.toBase58()}`,
-        },
-        body: JSON.stringify({ name, members: memberPubkeys }),
-      });
-
-      if (!response.ok) throw new Error('Failed to create squad');
-
-      const squad: Squad = await response.json();
-      await fetchSquads();
-      return squad;
+      return useSquadStore.getState().createSquadOnApi(name, emoji, memberPubkeys);
     },
-    [publicKey, fetchSquads]
+    [publicKey]
   );
 
   const depositToSquad = useCallback(
@@ -58,7 +30,7 @@ export function useSquad() {
       if (!publicKey) throw new Error('Wallet not connected');
 
       const squad = squads.find((s) => s.id === squadId);
-      if (!squad) throw new Error('Squad not found');
+      if (!squad || !squad.vault) throw new Error('Squad not found');
 
       const transaction = new Transaction().add(
         SystemProgram.transfer({
@@ -88,20 +60,16 @@ export function useSquad() {
       await connection.confirmTransaction(signature, 'confirmed');
 
       // Log off-chain
-      await fetch(`${API_URL}/api/squads/${squadId}/transactions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${publicKey.toBase58()}`,
-        },
-        body: JSON.stringify({
-          type: 'POOL',
-          amount: amountSOL,
-          currency: 'SOL',
-          txSignature: signature,
-          memo: 'Squad deposit',
-        }),
-      });
+      await api.logSquadTransaction(squadId, {
+        type: 'POOL',
+        amount: amountSOL,
+        currency: 'SOL',
+        txSignature: signature,
+        memo: 'Squad deposit',
+      }).catch(() => {});
+
+      // Update local state
+      useSquadStore.getState().depositToVault(squadId, 0, amountSOL);
 
       return signature;
     },

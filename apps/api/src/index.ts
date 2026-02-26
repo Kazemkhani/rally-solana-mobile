@@ -10,6 +10,7 @@ import squadRoutes from './routes/squads';
 import paymentRoutes from './routes/payments';
 import streamRoutes from './routes/streams';
 import notificationRoutes from './routes/notifications';
+import proposalRoutes from './routes/proposals';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,6 +37,7 @@ app.use('/api/squads', squadRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/streams', streamRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/proposals', proposalRoutes);
 
 // Error handling
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

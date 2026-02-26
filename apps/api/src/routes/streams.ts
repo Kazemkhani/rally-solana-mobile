@@ -59,7 +59,7 @@ router.get('/', async (req: AuthRequest, res) => {
 router.post('/:id/withdraw', async (req: AuthRequest, res) => {
   try {
     const stream = await prisma.paymentStream.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
     });
 
     if (!stream) {
@@ -77,7 +77,7 @@ router.post('/:id/withdraw', async (req: AuthRequest, res) => {
 router.post('/:id/cancel', async (req: AuthRequest, res) => {
   try {
     const stream = await prisma.paymentStream.update({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       data: { status: 'CANCELLED' },
     });
 

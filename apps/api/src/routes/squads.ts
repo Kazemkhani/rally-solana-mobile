@@ -59,7 +59,7 @@ router.get('/', async (req: AuthRequest, res) => {
       },
     });
 
-    res.json({ squads: memberships.map((m) => m.squad) });
+    res.json({ squads: memberships.map((m: { squad: any }) => m.squad) });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch squads' });
   }
@@ -69,7 +69,7 @@ router.get('/', async (req: AuthRequest, res) => {
 router.get('/:id', async (req: AuthRequest, res) => {
   try {
     const squad = await prisma.squad.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         members: true,
         transactions: { take: 20, orderBy: { createdAt: 'desc' } },
@@ -105,7 +105,7 @@ router.post('/:id/transactions', validate(logTxSchema), async (req: AuthRequest,
         currency: req.body.currency,
         fromPubkey: req.userPubkey!,
         toPubkey: req.body.toPubkey || '',
-        squadId: req.params.id,
+        squadId: req.params.id as string,
         txSignature: req.body.txSignature,
         memo: req.body.memo,
         status: 'CONFIRMED',
@@ -122,7 +122,7 @@ router.post('/:id/transactions', validate(logTxSchema), async (req: AuthRequest,
 router.get('/:id/transactions', async (req, res) => {
   try {
     const transactions = await prisma.transaction.findMany({
-      where: { squadId: req.params.id },
+      where: { squadId: req.params.id as string },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });

@@ -84,11 +84,15 @@ export const FONT_WEIGHTS = {
   extrabold: '800' as const,
 };
 
+import { Platform } from 'react-native';
+
 export const SOLANA_CLUSTER = 'devnet' as const;
 export const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
 
 export const API_URL = __DEV__
-  ? 'http://localhost:3001'
+  ? Platform.OS === 'android'
+    ? 'http://10.0.2.2:3001'
+    : 'http://localhost:3001'
   : 'https://api.rally.app';
 
 export const APP_NAME = 'Rally';

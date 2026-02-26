@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Animated,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Animated, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,9 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import AnimatedPressable from '../components/AnimatedPressable';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { MOCK_CONTACTS, MOCK_RECEIPT_ITEMS } from '../data/mockData';
+import { useWalletStore } from '../stores/wallet';
+import { useTransactionStore } from '../stores/transactions';
+import { api } from '../services/api';
 
 type Mode = 'send' | 'split';
 
@@ -27,6 +30,9 @@ export default function PayScreen() {
   const [amount, setAmount] = useState('0');
   const [currency, setCurrency] = useState<'SOL' | 'USDC'>('USDC');
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const { balance, usdcBalance, setBalance, setUsdcBalance } = useWalletStore();
+  const { addTransaction } = useTransactionStore();
 
   const rippleAnims = useRef(
     Array.from({ length: 12 }, () => new Animated.Value(0))
@@ -62,6 +68,83 @@ export default function PayScreen() {
   };
 
   const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '←'];
+
+  const handleSend = async () => {
+    if (!selectedContact || amount === '0' || sending) return;
+    const contact = MOCK_CONTACTS.find((c) => c.id === selectedContact);
+    if (!contact) return;
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+
+    setSending(true);
+    try {
+      // Log the payment to the API (demo mode — actual Solana tx via MWA on device)
+      const txSig = `tx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      await api.logPayment({
+        amount: parsedAmount,
+        currency,
+        toPubkey: contact.pubkey,
+        txSignature: txSig,
+        memo: `Sent to ${contact.displayName}`,
+      }).catch(() => {}); // Graceful fallback if API unavailable
+
+      // Update local wallet balance
+      if (currency === 'SOL') {
+        setBalance(Math.max(0, balance - parsedAmount));
+      } else {
+        setUsdcBalance(Math.max(0, usdcBalance - parsedAmount));
+      }
+
+      // Add to local transaction list
+      addTransaction({
+        id: txSig,
+        type: 'send',
+        amount: parsedAmount,
+        currency,
+        from: 'me',
+        to: contact.pubkey,
+        fromName: 'You',
+        toName: contact.displayName,
+        fromAvatar: '🚀',
+        toAvatar: contact.avatar,
+        timestamp: Date.now(),
+        status: 'confirmed',
+        memo: `Sent to ${contact.displayName}`,
+      });
+
+      Alert.alert('Sent!', `${currency === 'USDC' ? '$' : ''}${parsedAmount} ${currency} sent to ${contact.displayName}`);
+      setAmount('0');
+      setSelectedContact(null);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to send payment');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleRequestSplit = async () => {
+    const totalAmount = MOCK_RECEIPT_ITEMS.reduce((s, i) => s + i.price, 0);
+    const splitContacts = MOCK_CONTACTS.slice(0, 3);
+    const perPerson = totalAmount / splitContacts.length;
+
+    try {
+      await api.createSplit({
+        description: 'Expense split',
+        totalAmount,
+        currency: 'USDC',
+        splits: splitContacts.map((c) => ({
+          userPubkey: c.pubkey,
+          amount: perPerson,
+        })),
+      }).catch(() => {});
+
+      Alert.alert('Split Requested!', `$${totalAmount.toFixed(2)} split between ${splitContacts.length} people`);
+      setMode('send');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to create split');
+    }
+  };
 
   return (
     <ScreenWrapper>
@@ -187,8 +270,9 @@ export default function PayScreen() {
             <AnimReanimated.View entering={FadeInDown.delay(300).duration(400)}>
               <AnimatedPressable
                 scaleDepth={0.93}
-                style={[styles.sendButton, amount === '0' && styles.sendButtonDisabled]}
-                disabled={amount === '0'}
+                style={[styles.sendButton, (amount === '0' || sending) && styles.sendButtonDisabled]}
+                disabled={amount === '0' || sending}
+                onPress={handleSend}
               >
                 <LinearGradient
                   colors={['#8B5CF6', '#7C3AED']}
@@ -197,7 +281,7 @@ export default function PayScreen() {
                   end={{ x: 1, y: 0 }}
                 >
                   <Text style={styles.sendButtonText}>
-                    {selectedContact ? `Send to ${MOCK_CONTACTS.find(c => c.id === selectedContact)?.displayName || 'Contact'}` : 'Send'}
+                    {sending ? 'Sending...' : selectedContact ? `Send to ${MOCK_CONTACTS.find(c => c.id === selectedContact)?.displayName || 'Contact'}` : 'Send'}
                   </Text>
                 </LinearGradient>
               </AnimatedPressable>
@@ -243,7 +327,7 @@ export default function PayScreen() {
               ))}
             </ScrollView>
 
-            <AnimatedPressable scaleDepth={0.93} style={styles.requestBtn}>
+            <AnimatedPressable scaleDepth={0.93} style={styles.requestBtn} onPress={handleRequestSplit}>
               <LinearGradient
                 colors={['#8B5CF6', '#7C3AED']}
                 style={styles.sendButtonGradient}

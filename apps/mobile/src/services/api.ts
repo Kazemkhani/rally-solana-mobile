@@ -59,6 +59,20 @@ export interface ApiPaymentStream {
   createdAt: string;
 }
 
+export interface ApiProposal {
+  id: string;
+  squadId: string;
+  onchainAddress: string;
+  title: string;
+  description: string;
+  amount: string;
+  recipientPubkey: string;
+  deadline: string;
+  status: string;
+  createdAt: string;
+  squad?: { name: string; emoji: string };
+}
+
 export interface RegisterResponse {
   user: ApiUser;
   token: string;
@@ -267,6 +281,42 @@ class ApiService {
     return this.request('/api/notifications/preferences', {
       method: 'PUT',
       body: JSON.stringify(prefs),
+    });
+  }
+
+  // ─── Proposals ────────────────────────────────────────────
+  async createProposal(data: {
+    squadId: string;
+    title: string;
+    description: string;
+    amount: number;
+    recipientPubkey: string;
+    deadline: string;
+  }): Promise<ApiProposal> {
+    return this.request<ApiProposal>('/api/proposals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getProposals(): Promise<{ proposals: ApiProposal[] }> {
+    return this.request<{ proposals: ApiProposal[] }>('/api/proposals');
+  }
+
+  async getProposalDetails(proposalId: string): Promise<ApiProposal> {
+    return this.request<ApiProposal>('/api/proposals/' + proposalId);
+  }
+
+  async voteOnProposal(proposalId: string, vote: 'yes' | 'no'): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>('/api/proposals/' + proposalId + '/vote', {
+      method: 'POST',
+      body: JSON.stringify({ vote }),
+    });
+  }
+
+  async executeProposal(proposalId: string): Promise<ApiProposal> {
+    return this.request<ApiProposal>('/api/proposals/' + proposalId + '/execute', {
+      method: 'POST',
     });
   }
 

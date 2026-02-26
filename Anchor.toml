@@ -7,6 +7,11 @@ rally_squad = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 rally_stream = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnT"
 rally_vote = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnU"
 
+[programs.localnet]
+rally_squad = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+rally_stream = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnT"
+rally_vote = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnU"
+
 [registry]
 url = "https://api.apr.dev"
 
@@ -15,7 +20,7 @@ cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
 
 [workspace]
 members = [

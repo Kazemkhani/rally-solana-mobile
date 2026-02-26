@@ -1,0 +1,12 @@
+# Nixpacks configuration for Railway deployment
+[phases.setup]
+nixPkgs = ["nodejs_22", "openssl"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npx prisma generate", "npx tsc"]
+
+[start]
+cmd = "npx prisma db push --skip-generate && node dist/index.js"

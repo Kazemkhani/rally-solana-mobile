@@ -1,47 +1,60 @@
-#!/bin/bash
-# Rally Deployment Script — Deploy Solana programs to devnet
-set -e
+#!/usr/bin/env bash
+# ─── Rally — Full Deployment (Programs + API + APK) ──────────
+# Usage: ./scripts/deploy.sh
+#
+# This script orchestrates all three deployments in order:
+#   1. Solana programs → devnet
+#   2. API server → Railway (with PostgreSQL)
+#   3. Mobile APK → EAS Build
+#
+# Prerequisites: solana, anchor, railway, eas CLIs installed & authenticated
+#
+set -euo pipefail
 
-echo "🚀 Deploying Rally programs to devnet..."
+cd "$(dirname "$0")/.."
 
-# Ensure we're on devnet
-solana config set --url devnet
+echo ""
+echo "  ╔═══════════════════════════════════════╗"
+echo "  ║  Rally — Full Deployment               ║"
+echo "  ╚═══════════════════════════════════════╝"
+echo ""
 
-# Check wallet balance
-BALANCE=$(solana balance | awk '{print $1}')
-echo "💰 Wallet balance: $BALANCE SOL"
+# ── Step 1: Solana Programs ───────────────────────────────────
+echo "═══ STEP 1/3: Solana Programs → Devnet ═══"
+echo ""
+./scripts/deploy-programs.sh
 
-if (( $(echo "$BALANCE < 2" | bc -l) )); then
-    echo "⚠️  Low balance. Requesting airdrop..."
-    solana airdrop 2
-    sleep 5
+# Capture program IDs for API config
+SQUAD_ID=$(solana address -k target/deploy/rally_squad-keypair.json)
+STREAM_ID=$(solana address -k target/deploy/rally_stream-keypair.json)
+VOTE_ID=$(solana address -k target/deploy/rally_vote-keypair.json)
+
+# ── Step 2: API Server ────────────────────────────────────────
+echo ""
+echo "═══ STEP 2/3: API Server → Railway ═══"
+echo ""
+
+# Set program IDs as Railway variables
+if command -v railway &> /dev/null; then
+  railway variables set PROGRAM_RALLY_SQUAD="$SQUAD_ID"
+  railway variables set PROGRAM_RALLY_STREAM="$STREAM_ID"
+  railway variables set PROGRAM_RALLY_VOTE="$VOTE_ID"
 fi
 
-# Build programs
-echo ""
-echo "⚓ Building programs..."
-anchor build
+./scripts/deploy-api.sh --seed
 
-# Deploy
+# ── Step 3: Mobile APK ────────────────────────────────────────
 echo ""
-echo "📤 Deploying rally-squad..."
-SQUAD_ID=$(anchor deploy --program-name rally_squad 2>&1 | grep "Program Id:" | awk '{print $3}')
-echo "   Squad Program ID: $SQUAD_ID"
+echo "═══ STEP 3/3: Mobile APK → EAS Build ═══"
+echo ""
+./scripts/build-apk.sh --preview
 
 echo ""
-echo "📤 Deploying rally-stream..."
-STREAM_ID=$(anchor deploy --program-name rally_stream 2>&1 | grep "Program Id:" | awk '{print $3}')
-echo "   Stream Program ID: $STREAM_ID"
-
+echo "  ╔═══════════════════════════════════════╗"
+echo "  ║  Rally fully deployed!                 ║"
+echo "  ╚═══════════════════════════════════════╝"
 echo ""
-echo "📤 Deploying rally-vote..."
-VOTE_ID=$(anchor deploy --program-name rally_vote 2>&1 | grep "Program Id:" | awk '{print $3}')
-echo "   Vote Program ID: $VOTE_ID"
-
+echo "  Programs: https://explorer.solana.com/address/$SQUAD_ID?cluster=devnet"
+echo "  API:      railway open"
+echo "  APK:      eas build:download --latest --platform android"
 echo ""
-echo "✅ All programs deployed!"
-echo ""
-echo "Update your .env with:"
-echo "  PROGRAM_RALLY_SQUAD=$SQUAD_ID"
-echo "  PROGRAM_RALLY_STREAM=$STREAM_ID"
-echo "  PROGRAM_RALLY_VOTE=$VOTE_ID"

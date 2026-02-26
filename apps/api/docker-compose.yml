@@ -1,0 +1,41 @@
+# ─── Rally API — Local Development Stack ─────────────────────
+# Usage: cd apps/api && docker compose up -d
+# API: http://localhost:3001  |  DB: postgresql://rally:rally@localhost:5432/rally_dev
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rally
+      POSTGRES_PASSWORD: rally
+      POSTGRES_DB: rally_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - rally_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rally -d rally_dev']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_URL: postgresql://rally:rally@db:5432/rally_dev
+      PORT: '3001'
+      NODE_ENV: production
+      JWT_SECRET: rally-hackathon-secret-2026
+      SOLANA_RPC_URL: https://api.devnet.solana.com
+
+volumes:
+  rally_pgdata:

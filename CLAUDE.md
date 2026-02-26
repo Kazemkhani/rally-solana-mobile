@@ -63,6 +63,10 @@ When a mistake occurs, add it here:
 6. All stores must have API fetch + mock data fallback — app must work offline for demos.
 7. Auth uses hackathon mode (raw pubkey as Bearer token) — no JWT needed for dev/demo.
 8. Saksham's UI is the source of truth for frontend design. Preserve his component library and design tokens.
+9. App.tsx and AppNavigator.tsx are DEAD CODE — Expo Router (`app/` directory) is the only navigation system.
+10. API URL must use `10.0.2.2` for Android emulator, `localhost` for iOS. Production URL set separately.
+11. Express v5 types `req.params.id` as `string | string[]` — always cast with `as string` in Prisma queries.
+12. Deploy configs go in `apps/api/` (Dockerfile, railway.json, etc.) and `scripts/` (shell scripts).
 
 ### Mistake Patterns to Watch For
 - **Premature optimization**: Building features before validating core flow works end-to-end.
@@ -95,11 +99,12 @@ THINK → PLAN → BUILD → TEST → DEMO → REFLECT → IMPROVE → REPEAT
 | v0.2 | Squad creation + shared wallet (multisig-lite) | ✅ (program + API + UI) |
 | v0.3 | Expense splitting with receipt scan | ✅ (API + UI, OCR pending) |
 | v0.4 | Fund pooling + group savings goals | ✅ (squad vault deposit/withdraw) |
-| v0.5 | Quick votes on spending proposals | ✅ (program done, UI pending) |
+| v0.5 | Quick votes on spending proposals | ✅ (program + API + UI wired) |
 | v0.6 | Payment streaming (subscriptions, allowances) | ✅ (program + API + UI) |
-| v0.7 | DeFi yield on idle pool funds | 🔲 |
-| v0.8 | SKR token integration (rewards, governance) | 🔲 |
+| v0.7 | DeFi yield on idle pool funds | 🔲 (deferred) |
+| v0.8 | SKR token integration (rewards, governance) | 🔲 (deferred) |
 | v0.9 | Polish: animations, haptics, empty states, error handling | ✅ (Saksham's UI overhaul) |
+| v0.95 | Deployment configs, scripts, Docker, Railway, EAS | ✅ |
 | v1.0 | Demo video + pitch deck + final submission | 🔲 |
 
 ---
@@ -136,10 +141,10 @@ Each of these exists in isolation. Rally is the first to compose them into one d
 | Layer | Technology | Rationale |
 |-------|-----------|-----------|
 | Mobile App | React Native + Expo (Android-first) | Cross-platform but Seeker-optimized. Expo for fast iteration. |
-| Navigation | React Navigation v6 | Industry standard for RN, smooth native transitions |
+| Navigation | Expo Router v4 (file-based) | File-based routing, 5 tabs + dynamic squad detail |
 | State | Zustand + React Query | Lightweight, no boilerplate, great for async blockchain state |
 | Solana Client | @solana/web3.js + @solana-mobile/mobile-wallet-adapter | Official Solana Mobile Stack |
-| UI Kit | React Native Paper + custom components | Material Design base with custom Rally theme |
+| UI Kit | Custom glassmorphism + Reanimated 3 + lucide icons | Cinematic dark UI, spring animations, haptic feedback |
 | Backend API | Node.js + Express + TypeScript | Fast to build, easy to deploy |
 | Database | PostgreSQL + Prisma ORM | Relational for squad/user relationships, Prisma for type safety |
 | Solana Programs | Anchor (Rust) | Industry standard for Solana program development |
@@ -181,66 +186,79 @@ Judging alignment check: [which criteria did yesterday's work serve?]
 ```
 
 ### Submission Checklist
-- [ ] GitHub repo is clean, well-documented, meaningful commit history
+- [x] GitHub repo is clean, well-documented, meaningful commit history
 - [ ] Demo video: 3-5 minutes, shows ALL core features in action
 - [ ] Pitch deck: Problem → Solution → Demo → Tech → Vision → Team
-- [ ] README with setup instructions, architecture diagram, screenshots
-- [ ] App runs on Android (Seeker-compatible)
-- [ ] All Solana programs deployed to devnet
-- [ ] SKR integration documented and functional
+- [x] README with setup instructions, architecture diagram, feature comparison
+- [ ] App runs on Android (Seeker-compatible) — APK via `./scripts/build-apk.sh`
+- [ ] All Solana programs deployed to devnet — via `./scripts/deploy-programs.sh`
+- [x] SKR integration documented (Rally Rewards, Governance, Premium Pools)
+- [x] Deployment configs: Dockerfile, docker-compose, Railway, EAS, deploy scripts
+- [x] TypeScript zero errors (API + Mobile)
+- [x] 25 API endpoints (users, squads, payments, streams, proposals, notifications)
+- [x] 3 Solana programs (rally-squad, rally-stream, rally-vote) + tests
+- [x] 5 polished screens + squad detail + glassmorphism UI
 
 ---
 
 ## 📁 PROJECT STRUCTURE
 
 ```
-rally/
+rally-solana-mobile/
 ├── CLAUDE.md                          # This file — project brain
-├── README.md                          # Public-facing project overview
-├── .gitignore
+├── README.md                          # Pitch-deck README for hackathon judges
+├── Anchor.toml                        # Anchor workspace config (devnet + localnet)
 ├── package.json                       # Monorepo root (npm workspaces)
-├── turbo.json                         # Turborepo config
 ├── apps/
 │   ├── mobile/                        # React Native (Expo) — Seeker app
-│   │   ├── app.json
+│   │   ├── app.json                   # Expo config (Rally, com.rally.app)
+│   │   ├── eas.json                   # EAS Build profiles (dev, preview, production APK)
 │   │   ├── package.json
 │   │   ├── tsconfig.json
-│   │   ├── App.tsx
-│   │   ├── src/
-│   │   │   ├── screens/               # All app screens
-│   │   │   ├── components/            # Reusable UI components
-│   │   │   ├── navigation/            # React Navigation setup
-│   │   │   ├── hooks/                 # Custom hooks (useSolana, useSquad, etc.)
-│   │   │   ├── services/              # API, Solana, storage services
-│   │   │   ├── stores/                # Zustand stores (auth, wallet, squads, streams, transactions)
-│   │   │   ├── utils/                 # Helpers, constants, formatters
-│   │   │   └── types/                 # TypeScript type definitions
-│   │   └── assets/                    # Images, fonts, animations
-│   └── api/                           # Node.js Express API
+│   │   ├── babel.config.js
+│   │   ├── assets/                    # icon.png, adaptive-icon.png, splash.png
+│   │   ├── app/                       # Expo Router (file-based routing)
+│   │   │   ├── _layout.tsx            # Root layout with providers
+│   │   │   ├── index.tsx              # Redirect to /(tabs)/home
+│   │   │   ├── (tabs)/               # 5 tab screens (home, pay, squads, streams, profile)
+│   │   │   └── squad/[id].tsx         # Dynamic squad detail page
+│   │   └── src/
+│   │       ├── screens/               # HomeScreen, SquadScreen, PayScreen, StreamScreen, ProfileScreen
+│   │       ├── components/            # 13 reusable: AnimatedPressable, BalanceDisplay, Toast, etc.
+│   │       ├── hooks/                 # useSolana (MWA), useSquad (API + blockchain)
+│   │       ├── services/api.ts        # Typed API client (25 endpoints)
+│   │       ├── stores/                # Zustand: auth, wallet, squads, streams, transactions
+│   │       ├── data/mockData.ts       # Offline/demo fallback data
+│   │       ├── types/                 # TypeScript interfaces
+│   │       └── utils/constants.ts     # Colors, spacing, API_URL, Solana config
+│   └── api/                           # Node.js Express backend
+│       ├── Dockerfile                 # Multi-stage production Docker build
+│       ├── docker-compose.yml         # Local dev stack (API + PostgreSQL)
+│       ├── railway.json               # Railway deployment config
+│       ├── nixpacks.toml              # Railway Nixpacks build config
+│       ├── Procfile                    # Railway/Heroku process file
+│       ├── .env.example               # Environment template
 │       ├── package.json
 │       ├── tsconfig.json
 │       ├── src/
-│       │   ├── index.ts               # Server entry point
-│       │   ├── routes/                # Express route handlers
-│       │   ├── services/              # Business logic services
-│       │   ├── middleware/            # Auth, validation, error handling
-│       │   ├── models/                # Prisma-generated types
-│       │   └── config/                # Database, Solana, Firebase config
+│       │   ├── index.ts               # Server entry (25 routes registered)
+│       │   ├── routes/                # users, squads, payments, streams, proposals, notifications
+│       │   ├── middleware/            # JWT + pubkey auth, Zod validation
+│       │   └── config/                # database.ts (Prisma), solana.ts (RPC + program IDs)
 │       └── prisma/
-│           ├── schema.prisma          # Database schema (9 models)
-│           └── seed.ts                # Demo data seed script
-├── programs/                          # Solana Programs (Anchor/Rust)
-│   ├── rally-squad/                   # Shared wallet program
-│   ├── rally-stream/                  # Payment streaming program
-│   └── rally-vote/                    # Voting/proposals program
-├── tests/                             # Integration tests for programs
-├── docs/
-│   ├── ARCHITECTURE.md                # Technical architecture deep-dive
-│   ├── pitch-deck/                    # Pitch deck assets
-│   └── demo-script.md                # Demo video script
+│           ├── schema.prisma          # 9 models
+│           └── seed.ts                # Demo data (5 users, 3 squads, 4 txs, 2 streams)
+├── programs/                          # 3 Solana Programs (Anchor/Rust, ~756 lines total)
+│   ├── rally-squad/                   # Shared wallets: init, deposit, withdraw, add/remove member
+│   ├── rally-stream/                  # Payment streaming: create, withdraw, cancel
+│   └── rally-vote/                    # Proposals: create, vote, execute
+├── tests/rally.ts                     # Integration tests (9 tests across 3 programs)
 └── scripts/
     ├── setup.sh                       # One-command dev environment setup
-    └── deploy.sh                      # Deploy programs to devnet
+    ├── deploy.sh                      # Full deployment (programs + API + APK)
+    ├── deploy-api.sh                  # Railway or Docker API deployment
+    ├── deploy-programs.sh             # Solana devnet program deployment
+    └── build-apk.sh                   # EAS APK build for Seeker
 ```
 
 ---
@@ -248,28 +266,100 @@ rally/
 ## 🚀 QUICK COMMANDS
 
 ```bash
-# Setup
-npm install                            # Install all workspace dependencies
-cd programs && anchor build            # Build Solana programs
-cd apps/api && npx prisma generate     # Generate Prisma client
-
-# Database
-cd apps/api && cp .env.example .env    # Copy env template (edit DATABASE_URL)
-cd apps/api && npx prisma db push      # Push schema to DB (dev)
-cd apps/api && npx prisma migrate dev  # Create migration (production)
-cd apps/api && npm run db:seed         # Seed demo data
+# One-command setup (installs deps, starts PostgreSQL, seeds data)
+./scripts/setup.sh
 
 # Development
-cd apps/mobile && npx expo start       # Start mobile app (Expo)
-cd apps/api && npm run dev             # Start API server
-cd programs && anchor test             # Run program tests
+cd apps/api && npm run dev             # API server → http://localhost:3001
+cd apps/mobile && npx expo start       # Mobile app (scan QR with Expo Go)
+anchor test                            # Run program tests
 
-# Verify API
-curl http://localhost:3001/api/health  # Health check
+# Database
+cd apps/api && npx prisma db push      # Push schema to DB (dev)
+cd apps/api && npx prisma studio       # Visual DB editor
+cd apps/api && npm run db:seed         # Seed demo data
 
 # Deployment
-cd programs && anchor deploy           # Deploy to devnet
-cd apps/api && npm run deploy          # Deploy API to Railway
+./scripts/deploy-programs.sh           # Build + deploy 3 programs to devnet
+./scripts/deploy-api.sh                # Deploy API to Railway
+./scripts/deploy-api.sh --docker       # Deploy API locally via Docker
+./scripts/build-apk.sh                 # Build Android APK via EAS
+./scripts/deploy.sh                    # Full deployment (all three)
+
+# Docker (local production-like stack)
+cd apps/api && docker compose up -d    # API + PostgreSQL
+curl http://localhost:3001/api/health  # Verify
+```
+
+---
+
+## 🚢 DEPLOYMENT GUIDE
+
+### 1. Deploy Solana Programs to Devnet
+
+```bash
+# Prerequisites
+sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"    # Solana CLI
+cargo install --git https://github.com/coral-xyz/anchor anchor-cli --locked  # Anchor CLI
+solana-keygen new --no-bip39-passphrase                            # Generate keypair
+solana config set --url devnet                                     # Set cluster
+solana airdrop 5                                                   # Fund wallet
+
+# Deploy (builds, updates IDs, deploys all 3 programs)
+./scripts/deploy-programs.sh
+
+# Output: 3 program IDs (save these for API .env)
+```
+
+### 2. Deploy API to Railway
+
+```bash
+# Prerequisites
+npm install -g @railway/cli
+railway login
+railway init                                    # Create project
+railway add --plugin postgresql                # Add PostgreSQL (auto-sets DATABASE_URL)
+
+# Set environment variables
+railway variables set JWT_SECRET=<your-secret>
+railway variables set SOLANA_RPC_URL=https://api.devnet.solana.com
+railway variables set PROGRAM_RALLY_SQUAD=<from step 1>
+railway variables set PROGRAM_RALLY_STREAM=<from step 1>
+railway variables set PROGRAM_RALLY_VOTE=<from step 1>
+
+# Deploy
+./scripts/deploy-api.sh --seed                 # Deploys + seeds demo data
+
+# Get URL
+railway domain                                  # e.g. rally-api-production.up.railway.app
+```
+
+**Alternative: Docker (any cloud)**
+```bash
+cd apps/api && docker compose up -d             # Local
+# Or push to any Docker host: Fly.io, Render, DigitalOcean, AWS ECS
+docker build -t rally-api .
+docker push <registry>/rally-api
+```
+
+### 3. Build Android APK
+
+```bash
+# Prerequisites
+npm install -g eas-cli
+eas login                                       # Expo account required
+
+# Update API URL in apps/mobile/src/utils/constants.ts
+# Change 'https://api.rally.app' to your Railway URL
+
+# Build
+./scripts/build-apk.sh --preview               # ~10-15 min on EAS cloud
+
+# Download
+eas build:download --latest --platform android  # Downloads .apk
+
+# Install on Seeker
+adb install rally-*.apk
 ```
 
 ---
@@ -317,17 +407,21 @@ Rally integrates SKR (Seeker token) deeply:
 
 ### Current Focus
 <!-- Update this at the start of each session -->
-Frontend-backend integration. Saksham's UI overhaul is the source of truth for the mobile app. All screens now fetch from the API with mock data as fallback.
+Deployment and submission readiness. All code is complete, TypeScript compiles clean, deployment configs created. Next: deploy to production, build APK, record demo video.
 
 ### Integration Status (2026-02-26)
 
 | Layer | Status | Notes |
 |-------|--------|-------|
 | **Mobile UI (Saksham)** | DONE | 5 screens + squad detail, glassmorphism, reanimated, Expo Router |
-| **API Backend** | DONE | 20 endpoints, Prisma, JWT + pubkey auth, Zod validation |
-| **Solana Programs** | DONE | rally-squad, rally-stream, rally-vote — all implemented |
+| **API Backend** | DONE | 25 endpoints, Prisma, JWT + pubkey auth, Zod validation |
+| **Solana Programs** | DONE | rally-squad, rally-stream, rally-vote — all implemented + tests |
 | **Frontend-Backend Integration** | DONE | Stores fetch from API with mock fallback. Auth store handles registration. |
-| **Prisma Schema** | DONE | 9 models: User, Squad (with emoji), SquadMembership, Transaction, ExpenseSplit, SplitItem, PaymentStream, Proposal, NotificationPreference |
+| **PayScreen Wiring** | DONE | Send button + split button wired to API with balance updates |
+| **Proposal/Voting API** | DONE | 5 endpoints: create, list, detail, vote, execute |
+| **Deployment Configs** | DONE | Dockerfile, docker-compose, Railway, EAS, deploy scripts |
+| **TypeScript** | DONE | Zero errors in both API and mobile |
+| **Prisma Schema** | DONE | 9 models: User, Squad, SquadMembership, Transaction, ExpenseSplit, SplitItem, PaymentStream, Proposal, NotificationPreference |
 | **Seed Data** | DONE | prisma/seed.ts creates demo users, squads, transactions, splits, streams |
 
 ### Data Flow Architecture
@@ -353,7 +447,7 @@ Screen → Zustand Store → API Service → Express API → Prisma → PostgreS
 - `src/stores/streams.ts` — Stream listing with API + mock fallback
 - `src/stores/transactions.ts` — Transaction history with API + mock fallback
 
-### API Route Summary (20 endpoints)
+### API Route Summary (25 endpoints)
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | POST | /api/users/register | No | Register/update user, returns JWT |
@@ -374,20 +468,35 @@ Screen → Zustand Store → API Service → Express API → Prisma → PostgreS
 | GET | /api/streams | Yes | User's streams |
 | POST | /api/streams/:id/cancel | Yes | Cancel stream |
 | POST | /api/streams/:id/withdraw | Yes | Log withdrawal (stub) |
+| POST | /api/proposals | Yes | Create spending proposal |
+| GET | /api/proposals | Yes | List proposals for user's squads |
+| GET | /api/proposals/:id | Yes | Proposal details |
+| POST | /api/proposals/:id/vote | Yes | Cast vote on proposal |
+| POST | /api/proposals/:id/execute | Yes | Execute passed proposal |
 | POST | /api/notifications/register | Yes | Register FCM token |
 | GET/PUT | /api/notifications/preferences | Yes | Notification prefs |
 
 ### Open Questions
 - Exact SKR token mint address for devnet testing?
 - Seeker device testing access timeline?
-- Need PostgreSQL connection for end-to-end testing
+- Railway account + Expo account credentials for deployment
+
+### Deployment Status
+| Target | Status | Command |
+|--------|--------|---------|
+| Solana Programs → Devnet | READY | `./scripts/deploy-programs.sh` |
+| API → Railway | READY | `./scripts/deploy-api.sh` |
+| API → Docker (local) | READY | `cd apps/api && docker compose up -d` |
+| Mobile → APK | READY | `./scripts/build-apk.sh` |
+| Full Deploy | READY | `./scripts/deploy.sh` |
 
 ### Next Actions
-1. Deploy API to Railway with PostgreSQL
-2. Run Prisma migrations and seed on production DB
-3. Deploy Solana programs to devnet
-4. Build and test on physical Seeker device
-5. Record demo video
+1. **Deploy**: Run `./scripts/deploy-programs.sh` (needs Solana CLI + Anchor CLI + funded wallet)
+2. **Deploy**: Run `./scripts/deploy-api.sh --seed` (needs Railway CLI + account)
+3. **Build APK**: Run `./scripts/build-apk.sh --preview` (needs EAS CLI + Expo account)
+4. **Update API URL**: Set Railway URL in `apps/mobile/src/utils/constants.ts` production URL
+5. **Record demo video**: 3-5 min showing all 6 features
+6. **Create pitch deck**: Problem → Solution → Demo → Tech → Vision → Team
 
 ---
 

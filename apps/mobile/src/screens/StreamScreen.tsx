@@ -19,30 +19,34 @@ import { SkeletonCard } from '../components/LoadingSkeleton';
 import { showToast } from '../components/Toast';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { useStreamStore } from '../stores/streams';
+import { useWalletStore } from '../stores/wallet';
 
 export default function StreamScreen() {
-  const { streams } = useStreamStore();
+  const { streams, fetchStreams } = useStreamStore();
+  const { publicKey } = useWalletStore();
   const [tick, setTick] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'incoming' | 'outgoing'>('all');
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (publicKey) {
+      fetchStreams(publicKey).finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [publicKey]);
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 100);
     return () => clearInterval(id);
   }, []);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-      showToast('Streams refreshed', 'success');
-    }, 1000);
+    if (publicKey) await fetchStreams(publicKey);
+    setRefreshing(false);
+    showToast('Streams refreshed', 'success');
   };
 
   const now = Math.floor(Date.now() / 1000);

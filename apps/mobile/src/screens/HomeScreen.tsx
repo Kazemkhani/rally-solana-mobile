@@ -16,8 +16,10 @@ import EmptyState from '../components/EmptyState';
 import { SkeletonCard } from '../components/LoadingSkeleton';
 import { showToast } from '../components/Toast';
 import { COLORS, SPACING, RADIUS, FONT_SIZES, TRUNCATE_ADDRESS } from '../utils/constants';
-import { MOCK_TRANSACTIONS, MOCK_USER } from '../data/mockData';
+import { MOCK_USER } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
+import { useTransactionStore } from '../stores/transactions';
+import { useAuthStore } from '../stores/auth';
 
 // Gradient pairs per avatar initial
 const AVATAR_GRADIENTS: Record<string, [string, string]> = {
@@ -64,22 +66,27 @@ function getGreeting(): string {
 }
 
 export default function HomeScreen() {
-  const { balance, usdcBalance } = useWalletStore();
+  const { balance, usdcBalance, publicKey } = useWalletStore();
+  const { transactions, fetchTransactions, loading: txLoading } = useTransactionStore();
+  const { user } = useAuthStore();
   const [refreshing, setRefreshing] = React.useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // Display data: use auth user if available, fall back to mock
+  const displayName = user?.displayName || MOCK_USER.displayName;
+  const displayPubkey = publicKey || MOCK_USER.pubkey;
+
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(timer);
+    // Try to fetch from API, then mark as loaded
+    fetchTransactions().finally(() => setLoading(false));
   }, []);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-      showToast('Portfolio updated', 'success');
-    }, 1200);
+    await fetchTransactions();
+    setRefreshing(false);
+    showToast('Portfolio updated', 'success');
   };
 
   const badgeStyle = (type: string) => {
@@ -123,7 +130,7 @@ export default function HomeScreen() {
             </LinearGradient>
             <View style={styles.addressPill}>
               <Text style={styles.addressText}>
-                {TRUNCATE_ADDRESS(MOCK_USER.pubkey)}
+                {TRUNCATE_ADDRESS(displayPubkey)}
               </Text>
             </View>
             <View style={styles.bellContainer}>
@@ -134,7 +141,7 @@ export default function HomeScreen() {
 
           {/* Greeting */}
           <Animated.View entering={FadeInDown.delay(50).duration(400)}>
-            <Text style={styles.greeting}>{getGreeting()}, Alex</Text>
+            <Text style={styles.greeting}>{getGreeting()}, {displayName}</Text>
           </Animated.View>
 
           {/* Balance Card */}
@@ -238,14 +245,14 @@ export default function HomeScreen() {
               <SkeletonCard />
               <SkeletonCard />
             </View>
-          ) : MOCK_TRANSACTIONS.length === 0 ? (
+          ) : transactions.length === 0 ? (
             <EmptyState
               icon={<Users size={40} color="#888888" />}
               title="No transactions yet"
               subtitle="Send, split, or stream SOL to see your activity here"
             />
           ) : (
-            MOCK_TRANSACTIONS.map((tx, index) => {
+            transactions.map((tx, index) => {
               const badge = badgeStyle(tx.type);
               const isReceive = tx.type === 'receive' || tx.type === 'stream';
               const name = isReceive ? tx.fromName : tx.toName;

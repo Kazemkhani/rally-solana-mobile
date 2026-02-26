@@ -60,6 +60,9 @@ When a mistake occurs, add it here:
 3. Test Mobile Wallet Adapter flows on actual Seeker/Android emulator, not just web.
 4. Always validate transaction signatures server-side before updating state.
 5. Keep UI state and blockchain state in sync via event listeners, never polling.
+6. All stores must have API fetch + mock data fallback — app must work offline for demos.
+7. Auth uses hackathon mode (raw pubkey as Bearer token) — no JWT needed for dev/demo.
+8. Saksham's UI is the source of truth for frontend design. Preserve his component library and design tokens.
 
 ### Mistake Patterns to Watch For
 - **Premature optimization**: Building features before validating core flow works end-to-end.
@@ -88,15 +91,15 @@ THINK → PLAN → BUILD → TEST → DEMO → REFLECT → IMPROVE → REPEAT
 ### Version Milestones
 | Version | Focus | Status |
 |---------|-------|--------|
-| v0.1 | Wallet connection + basic P2P send on Seeker | 🔲 |
-| v0.2 | Squad creation + shared wallet (multisig-lite) | 🔲 |
-| v0.3 | Expense splitting with receipt scan | 🔲 |
-| v0.4 | Fund pooling + group savings goals | 🔲 |
-| v0.5 | Quick votes on spending proposals | 🔲 |
-| v0.6 | Payment streaming (subscriptions, allowances) | 🔲 |
+| v0.1 | Wallet connection + basic P2P send on Seeker | ✅ (hooks ready) |
+| v0.2 | Squad creation + shared wallet (multisig-lite) | ✅ (program + API + UI) |
+| v0.3 | Expense splitting with receipt scan | ✅ (API + UI, OCR pending) |
+| v0.4 | Fund pooling + group savings goals | ✅ (squad vault deposit/withdraw) |
+| v0.5 | Quick votes on spending proposals | ✅ (program done, UI pending) |
+| v0.6 | Payment streaming (subscriptions, allowances) | ✅ (program + API + UI) |
 | v0.7 | DeFi yield on idle pool funds | 🔲 |
 | v0.8 | SKR token integration (rewards, governance) | 🔲 |
-| v0.9 | Polish: animations, haptics, empty states, error handling | 🔲 |
+| v0.9 | Polish: animations, haptics, empty states, error handling | ✅ (Saksham's UI overhaul) |
 | v1.0 | Demo video + pitch deck + final submission | 🔲 |
 
 ---
@@ -209,7 +212,7 @@ rally/
 │   │   │   ├── navigation/            # React Navigation setup
 │   │   │   ├── hooks/                 # Custom hooks (useSolana, useSquad, etc.)
 │   │   │   ├── services/              # API, Solana, storage services
-│   │   │   ├── stores/                # Zustand state stores
+│   │   │   ├── stores/                # Zustand stores (auth, wallet, squads, streams, transactions)
 │   │   │   ├── utils/                 # Helpers, constants, formatters
 │   │   │   └── types/                 # TypeScript type definitions
 │   │   └── assets/                    # Images, fonts, animations
@@ -224,7 +227,8 @@ rally/
 │       │   ├── models/                # Prisma-generated types
 │       │   └── config/                # Database, Solana, Firebase config
 │       └── prisma/
-│           └── schema.prisma          # Database schema
+│           ├── schema.prisma          # Database schema (9 models)
+│           └── seed.ts                # Demo data seed script
 ├── programs/                          # Solana Programs (Anchor/Rust)
 │   ├── rally-squad/                   # Shared wallet program
 │   ├── rally-stream/                  # Payment streaming program
@@ -249,10 +253,19 @@ npm install                            # Install all workspace dependencies
 cd programs && anchor build            # Build Solana programs
 cd apps/api && npx prisma generate     # Generate Prisma client
 
+# Database
+cd apps/api && cp .env.example .env    # Copy env template (edit DATABASE_URL)
+cd apps/api && npx prisma db push      # Push schema to DB (dev)
+cd apps/api && npx prisma migrate dev  # Create migration (production)
+cd apps/api && npm run db:seed         # Seed demo data
+
 # Development
 cd apps/mobile && npx expo start       # Start mobile app (Expo)
 cd apps/api && npm run dev             # Start API server
 cd programs && anchor test             # Run program tests
+
+# Verify API
+curl http://localhost:3001/api/health  # Health check
 
 # Deployment
 cd programs && anchor deploy           # Deploy to devnet
@@ -304,18 +317,77 @@ Rally integrates SKR (Seeker token) deeply:
 
 ### Current Focus
 <!-- Update this at the start of each session -->
-Setting up project scaffolding and core architecture.
+Frontend-backend integration. Saksham's UI overhaul is the source of truth for the mobile app. All screens now fetch from the API with mock data as fallback.
+
+### Integration Status (2026-02-26)
+
+| Layer | Status | Notes |
+|-------|--------|-------|
+| **Mobile UI (Saksham)** | DONE | 5 screens + squad detail, glassmorphism, reanimated, Expo Router |
+| **API Backend** | DONE | 20 endpoints, Prisma, JWT + pubkey auth, Zod validation |
+| **Solana Programs** | DONE | rally-squad, rally-stream, rally-vote — all implemented |
+| **Frontend-Backend Integration** | DONE | Stores fetch from API with mock fallback. Auth store handles registration. |
+| **Prisma Schema** | DONE | 9 models: User, Squad (with emoji), SquadMembership, Transaction, ExpenseSplit, SplitItem, PaymentStream, Proposal, NotificationPreference |
+| **Seed Data** | DONE | prisma/seed.ts creates demo users, squads, transactions, splits, streams |
+
+### Data Flow Architecture
+```
+Screen → Zustand Store → API Service → Express API → Prisma → PostgreSQL
+              ↓ (fallback)
+         Mock Data (offline/demo mode)
+```
+
+### Stores → API Mapping
+| Store | API Endpoints | Fallback |
+|-------|--------------|----------|
+| `useAuthStore` | POST /api/users/register, GET /api/users/me | Pubkey as token |
+| `useWalletStore` | (calls useAuthStore.register on connect) | Pre-populated demo values |
+| `useSquadStore` | GET /api/squads, POST /api/squads | MOCK_SQUADS |
+| `useStreamStore` | GET /api/streams, POST /api/streams/:id/cancel | MOCK_STREAMS |
+| `useTransactionStore` | GET /api/users/me/transactions | MOCK_TRANSACTIONS |
+
+### Mobile Store Files
+- `src/stores/auth.ts` — JWT token, user profile, register/login
+- `src/stores/wallet.ts` — Solana wallet state, triggers auth on connect
+- `src/stores/squads.ts` — Squad CRUD with API + mock fallback
+- `src/stores/streams.ts` — Stream listing with API + mock fallback
+- `src/stores/transactions.ts` — Transaction history with API + mock fallback
+
+### API Route Summary (20 endpoints)
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | /api/users/register | No | Register/update user, returns JWT |
+| GET | /api/users/me | Yes | User profile with squads |
+| GET | /api/users/me/transactions | Yes | User's transaction history |
+| PUT | /api/users/me | Yes | Update profile |
+| GET | /api/users/:pubkey | No | Public profile |
+| POST | /api/squads | Yes | Create squad (with emoji) |
+| GET | /api/squads | Yes | List user's squads |
+| GET | /api/squads/:id | Yes | Squad details |
+| POST | /api/squads/:id/transactions | Yes | Log squad transaction |
+| GET | /api/squads/:id/transactions | No | Squad transaction history |
+| POST | /api/payments/send | Yes | Log P2P payment |
+| POST | /api/payments/split | Yes | Create expense split |
+| GET | /api/payments/splits | Yes | User's splits |
+| POST | /api/payments/splits/:id/settle | Yes | Settle split |
+| POST | /api/streams | Yes | Create stream |
+| GET | /api/streams | Yes | User's streams |
+| POST | /api/streams/:id/cancel | Yes | Cancel stream |
+| POST | /api/streams/:id/withdraw | Yes | Log withdrawal (stub) |
+| POST | /api/notifications/register | Yes | Register FCM token |
+| GET/PUT | /api/notifications/preferences | Yes | Notification prefs |
 
 ### Open Questions
 - Exact SKR token mint address for devnet testing?
 - Seeker device testing access timeline?
-- Anchor version compatibility with latest Solana Mobile Stack?
+- Need PostgreSQL connection for end-to-end testing
 
 ### Next Actions
-1. Scaffold all directories and config files
-2. Build wallet connection flow
-3. Implement Squad creation program
-4. Build core mobile screens
+1. Deploy API to Railway with PostgreSQL
+2. Run Prisma migrations and seed on production DB
+3. Deploy Solana programs to devnet
+4. Build and test on physical Seeker device
+5. Record demo video
 
 ---
 

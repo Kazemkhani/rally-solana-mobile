@@ -15,6 +15,7 @@ import { showToast } from '../components/Toast';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { useSquadStore } from '../stores/squads';
 import { MOCK_MEMBERS } from '../data/mockData';
+import { useWalletStore } from '../stores/wallet';
 
 // Per-card accent tints via LinearGradient
 const CARD_ACCENT_COLORS: { gradient: [string, string]; border: string; glow: string }[] = [
@@ -42,7 +43,8 @@ const AVATAR_GRADIENTS: [string, string][] = [
 
 export default function SquadScreen() {
   const router = useRouter();
-  const { squads, addSquad } = useSquadStore();
+  const { squads, addSquad, fetchSquads, createSquadOnApi } = useSquadStore();
+  const { publicKey } = useWalletStore();
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('🏠');
@@ -52,35 +54,41 @@ export default function SquadScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
+    fetchSquads().finally(() => setLoading(false));
   }, []);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-      showToast('Squads refreshed', 'success');
-    }, 1000);
+    await fetchSquads();
+    setRefreshing(false);
+    showToast('Squads refreshed', 'success');
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!newName.trim()) return;
-    addSquad({
-      name: newName.trim(),
-      emoji: newEmoji,
-      members: [MOCK_MEMBERS[0]],
-      vault: 'VaULt...' + Math.random().toString(36).slice(2, 6),
-      spendThreshold: 1_000_000_000,
-      totalDeposited: 0,
-      usdcBalance: 0,
-      createdAt: Date.now(),
-      lastActivity: 'Just created',
-    });
+    const trimmedName = newName.trim();
+
+    // Try creating via API first, fall back to local
+    try {
+      await createSquadOnApi(trimmedName, newEmoji, publicKey ? [publicKey] : []);
+    } catch {
+      addSquad({
+        name: trimmedName,
+        emoji: newEmoji,
+        members: [MOCK_MEMBERS[0]],
+        vault: 'VaULt...' + Math.random().toString(36).slice(2, 6),
+        spendThreshold: 1_000_000_000,
+        totalDeposited: 0,
+        usdcBalance: 0,
+        createdAt: Date.now(),
+        lastActivity: 'Just created',
+      });
+    }
+
     setNewName('');
     setNewEmoji('🏠');
     setShowCreate(false);
-    showToast(`${newName.trim()} created!`, 'success');
+    showToast(`${trimmedName} created!`, 'success');
   };
 
   return (

@@ -103,7 +103,7 @@ Nobody has unified these six capabilities into one cohesive mobile experience:
 5. Payment streaming (Superfluid)
 6. Yield on idle funds (DeFi)
 
-**3 custom Solana programs. 20 API endpoints. 5 polished screens. One app.**
+**3 custom Solana programs. 25 API endpoints. 5 polished screens. One app.**
 
 </td>
 <td width="25%" valign="top">
@@ -184,7 +184,7 @@ No blockchain terminology. No wallet setup friction. Just humans doing what huma
 │  rally-squad     │        │  Express + TypeScript  │
 │  rally-stream    │        │  Prisma + PostgreSQL   │
 │  rally-vote      │        │  JWT + Pubkey Auth     │
-│                  │        │  20 REST Endpoints     │
+│                  │        │  25 REST Endpoints     │
 │  3 Anchor        │        │  Zod Validation        │
 │  Programs        │        │                       │
 └──────────────────┘        └──────────────────────┘
@@ -198,7 +198,7 @@ No blockchain terminology. No wallet setup friction. Just humans doing what huma
 | **UI** | Reanimated 3 + LinearGradient | 60fps spring animations, glassmorphism, haptic feedback. Cash App aesthetics. |
 | **State** | Zustand 5 | Lightweight stores with API fetch + mock fallback. Works offline for demos. |
 | **Solana** | @solana/web3.js + Mobile Wallet Adapter | Official Solana Mobile Stack. Native MWA integration. |
-| **API** | Node.js + Express + TypeScript | 20 endpoints. Zod validation. JWT + hackathon pubkey auth. |
+| **API** | Node.js + Express + TypeScript | 25 endpoints. Zod validation. JWT + hackathon pubkey auth. |
 | **Database** | PostgreSQL + Prisma 6 | Type-safe ORM. 9 models covering all entities. Seed script for demo data. |
 | **Programs** | Anchor (Rust) | 3 onchain programs: squad wallets, payment streaming, proposal voting. |
 
@@ -288,7 +288,7 @@ anchor deploy                  # Deploy to devnet
 
 ## API Endpoints
 
-Rally's backend provides 20 REST endpoints:
+Rally's backend provides 25 REST endpoints:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -307,7 +307,14 @@ Rally's backend provides 20 REST endpoints:
 | `POST` | `/api/streams` | Create payment stream |
 | `GET` | `/api/streams` | List streams |
 | `POST` | `/api/streams/:id/cancel` | Cancel stream |
+| `POST` | `/api/streams/:id/withdraw` | Withdraw from stream |
+| `POST` | `/api/proposals` | Create spending proposal |
+| `GET` | `/api/proposals` | List proposals |
+| `GET` | `/api/proposals/:id` | Proposal details |
+| `POST` | `/api/proposals/:id/vote` | Cast vote |
+| `POST` | `/api/proposals/:id/execute` | Execute passed proposal |
 | `POST` | `/api/notifications/register` | Register push token |
+| `GET/PUT` | `/api/notifications/preferences` | Notification settings |
 
 ---
 
@@ -355,7 +362,7 @@ rally-solana-mobile/
 │   │       ├── components/        13 reusable components (AnimatedPressable, BalanceDisplay, etc.)
 │   │       ├── stores/            5 Zustand stores (auth, wallet, squads, streams, transactions)
 │   │       ├── hooks/             useSolana, useWallet, useSquad
-│   │       ├── services/          Typed API client (20 endpoints)
+│   │       ├── services/          Typed API client (25 endpoints)
 │   │       ├── data/              Mock data for offline/demo mode
 │   │       ├── types/             TypeScript interfaces
 │   │       └── utils/             Constants, colors, spacing tokens
@@ -393,6 +400,28 @@ rally-solana-mobile/
 
 ---
 
+## Deployment
+
+### One-Command Setup
+```bash
+./scripts/setup.sh     # Installs deps, starts PostgreSQL, seeds demo data
+```
+
+### Deploy Everything
+```bash
+./scripts/deploy-programs.sh    # 3 Solana programs → devnet
+./scripts/deploy-api.sh --seed  # API + PostgreSQL → Railway
+./scripts/build-apk.sh --preview  # Android APK → EAS Build
+```
+
+### Docker (local production stack)
+```bash
+cd apps/api && docker compose up -d
+curl http://localhost:3001/api/health
+```
+
+---
+
 ## Hackathon
 
 **MONOLITH — Solana Mobile Hackathon** (Jan – Mar 2026)
@@ -400,8 +429,9 @@ rally-solana-mobile/
 - **Platform**: Android APK for Solana Seeker
 - **Stack**: Solana Mobile Stack + Mobile Wallet Adapter
 - **Programs**: 3 custom Anchor programs deployed to devnet
-- **Backend**: 20 REST endpoints with PostgreSQL
+- **Backend**: 25 REST endpoints with PostgreSQL
 - **Frontend**: 5 polished screens with glassmorphism UI
+- **Deployment**: Dockerfile, docker-compose, Railway, EAS configs included
 
 ---
 

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Copy, Lock, Bell, Settings, LogOut, Check, Activity, Users, Flame, ChevronRight } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 
 import ScreenWrapper from '../components/ScreenWrapper';
 import AnimatedPressable from '../components/AnimatedPressable';
@@ -19,9 +20,10 @@ import { useSquadStore } from '../stores/squads';
 const HAIRLINE = StyleSheet.hairlineWidth;
 
 export default function ProfileScreen() {
-  const { balance, usdcBalance, skrBalance, disconnect, publicKey } = useWalletStore();
+  const { balance, usdcBalance, skrBalance, disconnect, publicKey, walletProvider } = useWalletStore();
   const { user, loadProfile } = useAuthStore();
   const { squads } = useSquadStore();
+  const router = useRouter();
 
   // Use auth user data if available, fall back to mock
   const displayName = user?.displayName || MOCK_USER.displayName;
@@ -61,6 +63,8 @@ export default function ProfileScreen() {
     setShowDisconnect(false);
     disconnect();
     showToast('Wallet disconnected', 'info');
+    // Navigate back to connect screen
+    router.replace('/');
   };
 
   const onRefresh = async () => {
@@ -215,6 +219,22 @@ export default function ProfileScreen() {
                   ios_backgroundColor="#222222"
                 />
               </View>
+              <View style={styles.listDivider} />
+
+              <AnimatedPressable scaleDepth={0.98} style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={styles.settingIconWrap}>
+                    <Settings color="#ffffff" size={18} strokeWidth={2} />
+                  </View>
+                  <Text style={styles.settingLabel}>Wallet</Text>
+                </View>
+                <View style={styles.settingRightBadge}>
+                  <Text style={styles.settingRightBadgeText}>
+                    {walletProvider ? walletProvider.charAt(0).toUpperCase() + walletProvider.slice(1) : 'None'}
+                  </Text>
+                  <ChevronRight size={16} color="#555555" />
+                </View>
+              </AnimatedPressable>
               <View style={styles.listDivider} />
 
               <AnimatedPressable scaleDepth={0.98} style={styles.settingRow}>

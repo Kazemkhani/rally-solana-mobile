@@ -8,7 +8,7 @@ import type { Squad } from '../types';
 
 export function useSquad() {
   const { connection, publicKey } = useSolana();
-  const { squads, activeSquad, setSquads, setActiveSquad, setLoading } =
+  const { squads, activeSquadId, setSquads, setActiveSquad, setLoading } =
     useSquadStore();
 
   const fetchSquads = useCallback(async () => {
@@ -122,7 +122,7 @@ export function useSquad() {
 
   return {
     squads,
-    activeSquad,
+    activeSquadId,
     fetchSquads,
     createSquad,
     depositToSquad,

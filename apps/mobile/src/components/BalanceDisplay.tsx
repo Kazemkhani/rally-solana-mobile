@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 
 interface Props {
   solBalance: number;
@@ -23,6 +23,7 @@ interface Props {
 export default function BalanceDisplay({ solBalance, usdcBalance }: Props) {
   const totalUsd = solBalance * 145 + usdcBalance;
   const shimmer = useSharedValue(-300);
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
 
   useEffect(() => {
     shimmer.value = withDelay(

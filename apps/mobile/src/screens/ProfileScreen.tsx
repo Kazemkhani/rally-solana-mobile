@@ -16,6 +16,7 @@ import { MOCK_USER } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
 import { useAuthStore } from '../stores/auth';
 import { useSquadStore } from '../stores/squads';
+import { useResponsive } from '../hooks/useResponsive';
 
 const HAIRLINE = StyleSheet.hairlineWidth;
 
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const { user, loadProfile } = useAuthStore();
   const { squads } = useSquadStore();
   const router = useRouter();
+  const { isDesktop } = useResponsive();
 
   // Use auth user data if available, fall back to mock
   const displayName = user?.displayName || MOCK_USER.displayName;
@@ -76,10 +78,13 @@ export default function ProfileScreen() {
 
   return (
     <ScreenWrapper accentStrength={0}>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={isDesktop ? [] : ['top']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isDesktop && { maxWidth: 600, alignSelf: 'center' as const, width: '100%' as any, paddingBottom: 40 },
+          ]}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ffffff" />
           }

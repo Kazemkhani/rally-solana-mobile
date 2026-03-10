@@ -16,6 +16,7 @@ import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { useSquadStore } from '../stores/squads';
 import { MOCK_MEMBERS } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
+import { useResponsive } from '../hooks/useResponsive';
 
 // Per-card accent tints via LinearGradient
 const CARD_ACCENT_COLORS: { gradient: [string, string]; border: string; glow: string }[] = [
@@ -52,6 +53,7 @@ export default function SquadScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { isDesktop } = useResponsive();
 
   useEffect(() => {
     fetchSquads().finally(() => setLoading(false));
@@ -93,7 +95,7 @@ export default function SquadScreen() {
 
   return (
     <ScreenWrapper>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={isDesktop ? [] : ['top']}>
         {/* Header */}
         <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
           <View>
@@ -127,7 +129,10 @@ export default function SquadScreen() {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isDesktop && { maxWidth: 900, alignSelf: 'center' as const, width: '100%' as any, paddingBottom: 40, flexDirection: 'row' as const, flexWrap: 'wrap' as const },
+          ]}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
           }

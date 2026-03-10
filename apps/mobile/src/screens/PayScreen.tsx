@@ -9,6 +9,7 @@ import ScreenWrapper from '../components/ScreenWrapper';
 import AnimatedPressable from '../components/AnimatedPressable';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { MOCK_CONTACTS, MOCK_RECEIPT_ITEMS } from '../data/mockData';
+import { useResponsive } from '../hooks/useResponsive';
 
 type Mode = 'send' | 'split';
 
@@ -27,6 +28,7 @@ export default function PayScreen() {
   const [amount, setAmount] = useState('0');
   const [currency, setCurrency] = useState<'SOL' | 'USDC'>('USDC');
   const [selectedContact, setSelectedContact] = useState<string | null>(null);
+  const { isDesktop } = useResponsive();
 
   const rippleAnims = useRef(
     Array.from({ length: 12 }, () => new Animated.Value(0))
@@ -65,7 +67,7 @@ export default function PayScreen() {
 
   return (
     <ScreenWrapper>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, isDesktop && { maxWidth: 480, alignSelf: 'center' as const, width: '100%' as any }]} edges={isDesktop ? [] : ['top']}>
         {mode === 'send' ? (
           <View style={styles.sendContainer}>
             {/* Contact Row — with proper spacing */}

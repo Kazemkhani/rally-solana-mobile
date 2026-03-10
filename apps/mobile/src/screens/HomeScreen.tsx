@@ -20,6 +20,7 @@ import { MOCK_USER } from '../data/mockData';
 import { useWalletStore } from '../stores/wallet';
 import { useTransactionStore } from '../stores/transactions';
 import { useAuthStore } from '../stores/auth';
+import { useResponsive } from '../hooks/useResponsive';
 
 // Gradient pairs per avatar initial
 const AVATAR_GRADIENTS: Record<string, [string, string]> = {
@@ -72,6 +73,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { isDesktop } = useResponsive();
 
   // Display data: use auth user if available, fall back to mock
   const displayName = user?.displayName || MOCK_USER.displayName;
@@ -102,7 +104,7 @@ export default function HomeScreen() {
 
   return (
     <ScreenWrapper accentStrength={0.06}>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={isDesktop ? [] : ['top']}>
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
@@ -113,7 +115,10 @@ export default function HomeScreen() {
               tintColor={COLORS.primary}
             />
           }
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isDesktop && { maxWidth: 720, alignSelf: 'center' as const, width: '100%' as any, paddingBottom: 40 },
+          ]}
         >
           {/* Header — Avatar, Address Pill, Bell */}
           <Animated.View

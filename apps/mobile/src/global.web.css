@@ -1,9 +1,14 @@
 /* Rally — Web-only polish */
 /* Applied via Platform.OS === 'web' injection in _layout.tsx */
 
-/* Hide scrollbars — app-like feel */
-*::-webkit-scrollbar { display: none; }
-* { scrollbar-width: none; }
+/* Hide scrollbars — app-like feel on mobile */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+}
 
 /* No text selection — feels like native app, not webpage */
 body {
@@ -32,4 +37,43 @@ a,
 [data-balance],
 [data-amount] {
   font-variant-numeric: tabular-nums;
+}
+
+/* ─── Desktop (≥768px) ─────────────────────────────────────── */
+@media (min-width: 768px) {
+
+  /* Allow text selection on desktop */
+  body {
+    -webkit-user-select: auto;
+    user-select: auto;
+  }
+
+  /* Show thin scrollbar on desktop */
+  *::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  }
+
+  /* Hover effects on interactive elements */
+  [role="button"]:hover {
+    opacity: 0.9;
+  }
 }

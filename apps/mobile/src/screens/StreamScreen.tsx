@@ -20,6 +20,7 @@ import { showToast } from '../components/Toast';
 import { COLORS, SPACING, RADIUS, FONT_SIZES } from '../utils/constants';
 import { useStreamStore } from '../stores/streams';
 import { useWalletStore } from '../stores/wallet';
+import { useResponsive } from '../hooks/useResponsive';
 
 export default function StreamScreen() {
   const { streams, fetchStreams } = useStreamStore();
@@ -28,6 +29,7 @@ export default function StreamScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'incoming' | 'outgoing'>('all');
+  const { isDesktop } = useResponsive();
 
   useEffect(() => {
     if (publicKey) {
@@ -59,7 +61,7 @@ export default function StreamScreen() {
 
   return (
     <ScreenWrapper>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={isDesktop ? [] : ['top']}>
         <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
           <Text style={styles.title}>Streams</Text>
           <Text style={styles.subtitle}>Real-time continuous payments</Text>
@@ -105,7 +107,10 @@ export default function StreamScreen() {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            isDesktop && { maxWidth: 900, alignSelf: 'center' as const, width: '100%' as any, paddingBottom: 40 },
+          ]}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
           }

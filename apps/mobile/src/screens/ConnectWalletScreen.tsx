@@ -9,6 +9,7 @@ import AnimatedPressable from '../components/AnimatedPressable';
 import { showToast } from '../components/Toast';
 import { COLORS } from '../utils/constants';
 import { useWallet } from '../hooks/useWallet';
+import { useResponsive } from '../hooks/useResponsive';
 import type { WalletProvider } from '../stores/wallet';
 
 // ─── Wallet Options ───────────────────────────────────────────
@@ -67,6 +68,7 @@ export default function ConnectWalletScreen() {
     const router = useRouter();
     const [error, setError] = useState<string | null>(null);
     const [selectedWallet, setSelectedWallet] = useState<WalletProvider | null>(null);
+    const { isDesktop } = useResponsive();
 
     // Animations
     const logoOpacity = useRef(new Animated.Value(0)).current;
@@ -175,7 +177,10 @@ export default function ConnectWalletScreen() {
             <View style={styles.ambientGlow2} />
 
             <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    isDesktop && { maxWidth: 440, alignSelf: 'center' as const, width: '100%' as any },
+                ]}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Rally Logo */}
